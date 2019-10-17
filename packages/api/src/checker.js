@@ -4,6 +4,7 @@ import ms from 'ms'
 
 import { model } from './db'
 import * as queue from './queue'
+import { sendNotifications } from './notifiers'
 
 const docker = new Docker()
 
@@ -60,6 +61,14 @@ async function updateServiceCheck(serviceCheck) {
 			serviceError,
 		})
 
+		if (serviceCheck.notifications) {
+			if (serviceStatus === 'unhealthy') {
+				sendNotifications(serviceCheck.notifications.on_failure, serviceCheck)
+			} else {
+				sendNotifications(serviceCheck.notifications.on_success, serviceCheck)
+			}
+		}
+
 		await container.remove()
 	} catch (error) {
 		logger.error(`Failed to run service check %O for service %O (halting service check)`, error, serviceCheck.check.name, serviceCheck.service)
@@ -100,6 +109,7 @@ export async function startWithConfig({ config }) {
 				queue.Enqueue(() => initServiceCheck({
 					service: name,
 					check,
+					notifications: config.notifications,
 				}))
 			}
 		}

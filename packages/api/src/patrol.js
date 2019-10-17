@@ -10,6 +10,7 @@ import yaml from 'js-yaml'
 import { initDB } from './db'
 import { startWithConfig } from './checker'
 import * as queue from './queue'
+import { normalizeNotifications } from './notifiers'
 
 const readFile = util.promisify(fs.readFile)
 
@@ -100,6 +101,23 @@ async function main() {
 			}
 		}
 	}
+
+	// Normalize notifications
+	if (config.notifications) {
+		if (typeof config.notifications !== 'object') {
+			console.error(`Error: 'notifications' should be a dictionary`)
+			hasErrors = true
+		} else {
+			if (config.notifications.on_success) {
+				const errors = normalizeNotifications(config.notifications.on_success)
+				if (errors) {
+					console.error(errors)
+					hasErrors = true
+				}
+			}
+		}
+	}
+
 	if (hasErrors) {
 		console.error()
 		yargs.showHelp()
