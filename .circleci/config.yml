@@ -1,0 +1,41 @@
+version: 2
+jobs:
+  build:
+    docker:
+    - image: circleci/node:10.15.3
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v0-deps
+      - run:
+          name: Install dependencies
+          command: npx @karimsa/mono
+      - save_cache:
+          key: v0-deps
+          paths:
+            - ~/.npm
+            - ~/.cache
+      - run:
+          name: Linting
+          command: npx @karimsa/mono run lint
+      - run:
+          name: Building
+          command: npx @karimsa/mono run build
+      - run:
+          name: Run tests
+          command: npx @karimsa/mono test
+      - run:
+          name: Deploy unstable
+          command: |
+            docker tag patrol karimsa/patrol:unstable
+            docker push karimsa/patrol:unstable
+      - run:
+          name: Deploy latest
+          command: |
+            if test "$CIRCLE_BRANCH" = "master" && test v`cat package.json | grep version | cut -d: -f2 | cut -d\" -f2` = "`git describe --tags ${CIRCLE_SHA1}`"; then
+              docker push karimsa/patrol:stable
+            else
+              echo "Skipping. No tag found."
+            fi
