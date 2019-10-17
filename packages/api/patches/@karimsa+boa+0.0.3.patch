@@ -1,0 +1,94 @@
+diff --git a/node_modules/@karimsa/boa/dist/logger.js b/node_modules/@karimsa/boa/dist/logger.js
+index 43253ef..3063b4a 100644
+--- a/node_modules/@karimsa/boa/dist/logger.js
++++ b/node_modules/@karimsa/boa/dist/logger.js
+@@ -70,6 +70,10 @@ const hostname = os.hostname();
+ const pid = process.pid;
+ 
+ function SPrint(info) {
++  if (Config.bool('Logger.ShortFormat', !Config.isProduction)) {
++    return `${colorLevel(info.level)}: ${info.message}`
++  }
++
+   let log = '';
+ 
+   if (Config.isTestEnv) {
+@@ -92,12 +96,13 @@ function SPrintf(level, msg, ...args) {
+ 
+ const internalLogger = (0, _winston.createLogger)({
+   format: _winston.format.printf(SPrint),
+-  level: Config.string('LoggingLevel', 'warn'),
++  level: Config.string('LoggingLevel', 'info'),
+   transports: [new _winston.transports.Console()]
+ });
++const lastDebugTime = new Map();
+ const formatOpts = {
+   colors: true,
+-  depth: 10
++  depth: 100
+   /**
+    * A winston-powered logger with `util.format()` powered message
+    * formatting & convenience methods for errors and debugging.
+@@ -153,6 +158,10 @@ const logger = {
+    */
+   SPrintf,
+ 
++  isDebugEnabled(namespace) {
++    return _debug.default.enabled(namespace)
++  },
++
+   /**
+    * Prints an info log to the logger if debugging is enabled for the namespace.
+    * @param {String} namespace a debug-package friendly namespace
+@@ -160,8 +169,20 @@ const logger = {
+    * @param  {...any} args arguments to interpolate into the message
+    */
+   debug(namespace, msg, ...args) {
+-    if (_debug.default.enabled(namespace)) {
+-      internalLogger.info(util.formatWithOptions(formatOpts, msg, ...args));
++    if (logger.isDebugEnabled(namespace)) {
++      let startTime = Date.now()
++      if (lastDebugTime.has(namespace)) {
++        startTime = lastDebugTime.get(namespace)
++      }
++      lastDebugTime.set(namespace, Date.now())
++
++      process.stderr.write(
++        logger.SPrintf(
++          _chalk.default.yellow(`debug(${namespace})`),
++          msg + ' ' + _chalk.default.yellow('+' + (Date.now() - startTime) + 'ms'),
++          ...args,
++        ) + '\n',
++      )
+     }
+   },
+ 
+diff --git a/node_modules/@karimsa/boa/dist/perf.js b/node_modules/@karimsa/boa/dist/perf.js
+index cbfc664..1f1e1ca 100644
+--- a/node_modules/@karimsa/boa/dist/perf.js
++++ b/node_modules/@karimsa/boa/dist/perf.js
+@@ -30,15 +30,15 @@ function mstime(ms) {
+ // code blocks
+ 
+ 
+-if (Config.isProduction) {
+-  require('blocked')(delay => _logger.logger.warn(`Event loop blocked for ${mstime(delay)}`), {
+-    threshold: Config.int('Perf.MaxEventLoopBlock', 100)
+-  });
+-} else {
+-  require('blocked-at')((delay, stack) => _logger.logger.warn(`Event loop blocked for ${mstime(delay)} at: ${stack.join('\n')}`), {
+-    threshold: Config.int('Perf.MaxEventLoopBlock', 100)
+-  });
+-}
++// if (Config.isProduction) {
++//   require('blocked')(delay => _logger.logger.warn(`Event loop blocked for ${mstime(delay)}`), {
++//     threshold: Config.int('Perf.MaxEventLoopBlock', 100)
++//   });
++// } else {
++//   require('blocked-at')((delay, stack) => _logger.logger.warn(`Event loop blocked for ${mstime(delay)} at: ${stack.join('\n')}`), {
++//     threshold: Config.int('Perf.MaxEventLoopBlock', 100)
++//   });
++// }
+ /**
+  * Simple API for monitoring performance.
+  */

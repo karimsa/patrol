@@ -1,0 +1,19 @@
+{
+	"private": true,
+	"scripts": {
+		"postinstall": "patch-package",
+		"build": "wiz build src/patrol.js"
+	},
+	"dependencies": {
+		"@karimsa/boa": "0.0.3",
+		"dockerode": "^3.0.2",
+		"heap": "^0.2.6",
+		"js-yaml": "^3.13.1",
+		"nedb": "^1.8.0",
+		"patch-package": "^6.2.0",
+		"yargs": "^14.2.0"
+	},
+	"devDependencies": {
+		"trace": "^3.1.1"
+	}
+}

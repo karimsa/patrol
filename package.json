@@ -1,0 +1,33 @@
+{
+	"name": "@karimsa/patrol",
+	"version": "0.0.0",
+	"private": true,
+	"engines": {
+		"node": "10"
+	},
+	"scripts": {
+		"lint": "eslint cypress/integration/*.spec.js",
+		"api": "cd packages/api && npm run teststart",
+		"web": "cd packages/web && npm start",
+		"cy:run": "cypress run",
+		"test": "NODE_ENV=test start-server-and-test 'npm run api' http://localhost:8080/api/v0/status cy:web",
+		"cy:web": "start-server-and-test 'npm run web' 1234 cy:run",
+		"cy:open": "NODE_ENV=test concurrently -k 'npm run api' 'npm run web' 'cypress open'"
+	},
+	"devDependencies": {
+		"@karimsa/mono": "^0.1.0",
+		"babel-eslint": "^10.0.3",
+		"concurrently": "^4.1.2",
+		"cypress": "^3.4.1",
+		"eslint": "^6.3.0",
+		"eslint-plugin-import": "^2.18.2",
+		"eslint-plugin-node": "^10.0.0",
+		"eslint-plugin-prettier": "^3.1.0",
+		"eslint-plugin-promise": "^4.2.1",
+		"eslint-plugin-standard": "^4.0.1",
+		"moment": "^2.24.0",
+		"nodemon": "^1.19.2",
+		"prettier": "^1.18.2",
+		"start-server-and-test": "^1.10.0"
+	}
+}
