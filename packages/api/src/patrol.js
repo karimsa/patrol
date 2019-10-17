@@ -3,7 +3,9 @@ import * as path from 'path'
 import * as util from 'util'
 import * as os from 'os'
 import ms from 'ms'
+import http from 'http'
 
+import { logger } from '@karimsa/boa'
 import yargs from 'yargs'
 import yaml from 'js-yaml'
 
@@ -11,6 +13,7 @@ import { initDB } from './db'
 import { startWithConfig } from './checker'
 import * as queue from './queue'
 import { normalizeNotifications } from './notifiers'
+import { createApp } from './api'
 
 const readFile = util.promisify(fs.readFile)
 
@@ -126,6 +129,15 @@ async function main() {
 
 	// Initialize collections
 	initDB(config.dbDirectory)
+
+	// Create the API server
+	const app = createApp(config)
+	const server = http.createServer(app)
+	await new Promise((resolve, reject) => {
+		server.on('error', reject)
+		server.listen(config.port || 8080, resolve)
+	})
+	logger.info(`Started patrol API server on :%O`, server.address().port)
 
 	// Start the first scan
 	await queue.Enqueue(() => startWithConfig({

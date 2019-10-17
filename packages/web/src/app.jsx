@@ -1,13 +1,15 @@
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap'
+import '@babel/polyfill'
+import $ from 'jquery'
 import React from 'react'
 import ReactDOM from 'react-dom'
 
-function App() {
-	return (
-		<h1>Hello, world</h1>
-	)
+import './app.scss'
+import { Home } from './components/home'
+
+if ((process.env.NODE_ENV || 'development') === 'development') {
+	window.$ = window.jQuery = $
 }
 
-ReactDOM.render(
-	<App />,
-	document.getElementById('app')
-)
+ReactDOM.render(<Home />, document.getElementById('app'))

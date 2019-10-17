@@ -1,0 +1,23 @@
+{
+	"scripts": {
+		"format": "npm run pretest -- --fix",
+		"pretest": "eslint --cache src/**/*.jsx",
+		"start": "parcel serve --port 1234 src/index.html",
+		"build": "parcel build src/index.html"
+	},
+	"devDependencies": {
+		"parcel": "^1.12.3",
+		"sass": "^1.22.12"
+	},
+	"dependencies": {
+		"@emotion/core": "^10.0.21",
+		"axios": "^0.19.0",
+		"bootstrap": "^4.3.1",
+		"jquery": "^3.4.1",
+		"moment": "^2.24.0",
+		"popper.js": "^1.15.0",
+		"react": "^16.10.2",
+		"react-dom": "^16.9.0",
+		"react-router-dom": "^5.1.2"
+	}
+}

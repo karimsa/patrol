@@ -1,0 +1,19 @@
+$primary: #1F8CEB;
+$success: #00eb8b;
+$warn: rgb(255, 188, 98);
+$dark: #374048;
+
+body {
+    font-family: 'Lato', sans-serif;
+}
+
+.bg-muted { background-color: #f6f8fa !important }
+
+.border-none {
+	border: none;
+}
+
+.card {
+	border: none;
+	box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+}
