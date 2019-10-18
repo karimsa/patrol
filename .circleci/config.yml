@@ -8,12 +8,12 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v{{ CACHE_VERSION }}-deps
+            - v{{ .Environment.CACHE_VERSION }}-deps
       - run:
           name: Install dependencies
           command: npx @karimsa/mono
       - save_cache:
-          key: v{{ CACHE_VERSION }}-deps
+          key: v{{ .Environment.CACHE_VERSION }}-deps
           paths:
             - ~/.npm
             - ~/.cache
