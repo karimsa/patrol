@@ -140,28 +140,6 @@ async function main() {
 		config.web = defaultWebConfig
 	}
 
-	if (config.web.port === undefined) {
-		config.web.port = defaultWebConfig.port
-	}
-	if (
-		typeof config.web.port !== 'number' ||
-		config.web.port !== Math.floor(config.web.port)
-	) {
-		console.error(`web.port must be a valid integer`)
-		hasErrors = true
-	}
-
-	if (config.web.apiPort === undefined) {
-		config.web.apiPort = defaultWebConfig.apiPort
-	}
-	if (
-		typeof config.web.apiPort !== 'number' ||
-		config.web.apiPort !== Math.floor(config.web.apiPort)
-	) {
-		console.error(`web.apiPort must be a valid integer`)
-		hasErrors = true
-	}
-
 	if (!config.web.title) {
 		config.web.title = defaultWebConfig.title
 	}
