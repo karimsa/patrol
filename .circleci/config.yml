@@ -1,6 +1,6 @@
 version: 2
 orbs:
-  docker-publish: circleci/docker-publish@0.1.7
+  docker: circleci/docker@0.5.13
 jobs:
   build:
     docker:
@@ -29,8 +29,8 @@ jobs:
       - run:
           name: Run tests
           command: npx @karimsa/mono test
-      - docker-publish/publish:
-          image: patrol
+      - docker/publish:
+          image: karimsa/patrol
           tag: unstable
       - run:
           name: Deploy latest
