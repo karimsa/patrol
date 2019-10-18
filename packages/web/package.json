@@ -1,4 +1,5 @@
 {
+	"name": "@karimsa/patrol-web",
 	"scripts": {
 		"format": "npm run pretest -- --fix",
 		"pretest": "eslint --cache src/**/*.jsx",

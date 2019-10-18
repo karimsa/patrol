@@ -1,7 +1,9 @@
 {
-	"scripts": {
-		"build": "docker build -t patrol-tools .",
-		"pretest": "npm run build",
-		"test": "docker run --rm -it -v \"$PWD:/app\" --workdir /app patrol-tools /bin/sh -c /app/tests.sh"
-	}
+  "name": "@karimsa/patrol-tools",
+  "private": true,
+  "scripts": {
+    "build": "docker build -t patrol-tools .",
+    "pretest": "npm run build",
+    "test": "docker run --rm -it -v \"$PWD:/app\" --workdir /app patrol-tools /bin/sh -c /app/tests.sh"
+  }
 }

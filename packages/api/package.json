@@ -1,25 +1,26 @@
 {
+  "name": "@karimsa/patrol-api",
 	"private": true,
-	"scripts": {
-		"postinstall": "patch-package",
-		"build": "wiz build src/patrol.js"
-	},
-	"dependencies": {
-		"@karimsa/boa": "0.0.3",
-		"cors": "^2.8.5",
-		"dockerode": "^3.0.2",
-		"express": "^4.17.1",
-		"heap": "^0.2.6",
-		"js-yaml": "^3.13.1",
-		"morgan": "^1.9.1",
-		"mustache": "^3.1.0",
-		"nedb": "^1.8.0",
-		"patch-package": "^6.2.0",
-		"request": "^2.88.0",
-		"request-promise-native": "^1.0.7",
-		"yargs": "^14.2.0"
-	},
-	"devDependencies": {
-		"trace": "^3.1.1"
-	}
+  "scripts": {
+    "postinstall": "patch-package",
+    "build": "wiz build src/patrol.js"
+  },
+  "dependencies": {
+    "@karimsa/boa": "0.0.3",
+    "cors": "^2.8.5",
+    "dockerode": "^3.0.2",
+    "express": "^4.17.1",
+    "heap": "^0.2.6",
+    "js-yaml": "^3.13.1",
+    "morgan": "^1.9.1",
+    "mustache": "^3.1.0",
+    "nedb": "^1.8.0",
+    "patch-package": "^6.2.0",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.7",
+    "yargs": "^14.2.0"
+  },
+  "devDependencies": {
+    "trace": "^3.1.1"
+  }
 }
