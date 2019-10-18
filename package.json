@@ -6,7 +6,6 @@
 		"node": "10"
 	},
 	"scripts": {
-		"build": "docker build -t patrol .",
 		"no-lint": "eslint cypress/integration/*.spec.js",
 		"api": "cd packages/api && npm run teststart",
 		"web": "cd packages/web && npm start",
