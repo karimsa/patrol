@@ -55,7 +55,7 @@ export function Home() {
 										<p className="lead mb-0 font-weight-bold">
 											All Systems Operational
 										</p>
-										<p className="small d-inline-block mb-0">
+										<p className="small d-none d-sm-inline-block mb-0">
 											Last updated: {moment(lastUpdated).fromNow()}
 										</p>
 									</div>
