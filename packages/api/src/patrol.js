@@ -80,9 +80,9 @@ async function main() {
 							`Error: 'services.${name}[${index}].name' must be a valid string`,
 						)
 						hasErrors = true
-					} else if (typeof check.check !== 'string' || !check.check) {
+					} else if (typeof check.cmd !== 'string' || !check.cmd) {
 						console.error(
-							`Error: 'services.${name}[${index}].check' must be a valid string`,
+							`Error: 'services.${name}[${index}].cmd' must be a valid string`,
 						)
 						hasErrors = true
 					}
