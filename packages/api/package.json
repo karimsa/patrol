@@ -3,7 +3,7 @@
 	"private": true,
   "scripts": {
     "postinstall": "patch-package",
-    "build": "wiz build src/patrol.js"
+    "build": "wiz build src/patrol.js && chmod +x patrol.dist.js"
   },
   "dependencies": {
     "@karimsa/boa": "0.0.3",

@@ -9,6 +9,9 @@ export function data(fn) {
 }
 
 export const axios = axiosModule.create({
-	baseURL: `http://${location.hostname}:8080/api`,
+	baseURL:
+		process.env.NODE_ENV === 'production'
+			? `${location.protocol}://${location.host}/api`
+			: `http://${location.hostname}:8080/api`,
 	withCredentials: true,
 })

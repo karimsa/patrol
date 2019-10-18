@@ -1,3 +1,5 @@
+import * as path from 'path'
+
 import express from 'express'
 import morgan from 'morgan'
 import cors from 'cors'
@@ -27,13 +29,17 @@ class APIError extends Error {
 export function createApp(config) {
 	const app = express()
 
+	app.use(express.static(path.resolve(__dirname, '..', 'web', 'dist')))
 	app.use(morgan('dev'))
-	app.use(
-		cors({
-			origin: 'http://localhost:1234',
-			credentials: true,
-		}),
-	)
+
+	if (process.env.NODE_ENV !== 'production') {
+		app.use(
+			cors({
+				origin: 'http://localhost:1234',
+				credentials: true,
+			}),
+		)
+	}
 
 	const checkList = []
 

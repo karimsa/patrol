@@ -4,7 +4,7 @@
 		"format": "npm run pretest -- --fix",
 		"pretest": "eslint --cache src/**/*.jsx",
 		"start": "parcel serve --port 1234 src/index.html",
-		"build": "parcel build src/index.html"
+		"build": "NODE_ENV=production parcel build src/index.html"
 	},
 	"devDependencies": {
 		"parcel": "^1.12.3",
