@@ -39,7 +39,7 @@ export function Home() {
 				<div className="container">
 					{configState.result && <div className="row">
 						<div className="col">
-							<h4 className="text-white mb-4">{configState.result.title}</h4>
+							<h4 className="text-white mb-4">{String(configState.result.title)}</h4>
 						</div>
 					</div>}
 
@@ -79,7 +79,7 @@ export function Home() {
 					</div>}
 					{checksState.error && <div className="row">
 						<div className="col">
-							<div className="alert alert-danger">{checksState.error}</div>
+							<div className="alert alert-danger">{String(checksState.error)}</div>
 						</div>
 					</div>}
 					{checksState.result && Object.keys(checksState.result).map((service, index) => (
