@@ -1,3 +1,36 @@
+diff --git a/node_modules/@karimsa/boa/dist/config.js b/node_modules/@karimsa/boa/dist/config.js
+index dee7e65..5b685c1 100644
+--- a/node_modules/@karimsa/boa/dist/config.js
++++ b/node_modules/@karimsa/boa/dist/config.js
+@@ -1,13 +1,13 @@
+ "use strict";
+ 
+ Object.defineProperty(exports, "__esModule", {
+-  value: true
++  value: true,
+ });
+ exports.string = string;
+ exports.bool = bool;
+ exports.exists = exists;
+ exports.int = int;
+-exports.isLocalEnv = exports.EnvTarget = exports.isProduction = exports.isDevelopment = exports.isTestEnv = exports.NodeEnv = void 0;
++exports.isLocalEnv = exports.isProduction = exports.isDevelopment = exports.isTestEnv = exports.NodeEnv = void 0;
+ 
+ /**
+  * @file src/config.js
+@@ -60,9 +60,9 @@ const isDevelopment = NodeEnv === 'development';
+ exports.isDevelopment = isDevelopment;
+ const isProduction = NodeEnv === 'production';
+ exports.isProduction = isProduction;
+-const EnvTarget = isProduction ? assertString('ENV_TARGET') : getValue('ENV_TARGET') || 'development';
+-exports.EnvTarget = EnvTarget;
+-const isLocalEnv = getValue('NODE_ENV') !== 'production' || EnvTarget === 'local';
++// const EnvTarget = isProduction ? assertString('ENV_TARGET') : getValue('ENV_TARGET') || 'development';
++// exports.EnvTarget = EnvTarget;
++const isLocalEnv = getValue('NODE_ENV') !== 'production'; // || EnvTarget === 'local';
+ /**
+  * Reads a environment variable from the env as a string.
+  * @param {string} name name of the environment variable to read
 diff --git a/node_modules/@karimsa/boa/dist/logger.js b/node_modules/@karimsa/boa/dist/logger.js
 index 43253ef..3063b4a 100644
 --- a/node_modules/@karimsa/boa/dist/logger.js
