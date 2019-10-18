@@ -29,6 +29,9 @@ async function updateServiceCheck(serviceCheck) {
 			}
 		}
 
+		// verify that the image exists
+		await docker.pull(serviceCheck.check.image)
+
 		const startedAt = Date.now()
 		const container = await docker.createContainer({
 			name,
