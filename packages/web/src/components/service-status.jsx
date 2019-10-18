@@ -1,6 +1,8 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 import { ServiceCheckCard } from './service-check-card'
+import { CheckType } from '../models/checks'
 
 export function ServiceStatus({ service, checks }) {
 	return (
@@ -15,4 +17,9 @@ export function ServiceStatus({ service, checks }) {
 			))}
 		</>
 	)
+}
+
+ServiceStatus.propTypes = {
+	service: PropTypes.string.isRequired,
+	checks: PropTypes.arrayOf(CheckType.isRequired).isRequired,
 }

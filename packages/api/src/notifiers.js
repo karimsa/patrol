@@ -11,13 +11,19 @@ const Notifiers = {
 		},
 
 		async sendNotification(notification, serviceCheck) {
-			const body = notification.options.body ? Mustache.render(notification.options.body, serviceCheck) : undefined
+			const body = notification.options.body
+				? Mustache.render(notification.options.body, serviceCheck)
+				: undefined
 			const requestOptions = {
 				...notification.options,
 				body,
 			}
 
-			logger.debug('patrol', `Executing outgoing webhook with options: %O`, requestOptions)
+			logger.debug(
+				'patrol',
+				`Executing outgoing webhook with options: %O`,
+				requestOptions,
+			)
 			await request(requestOptions)
 		},
 	},
@@ -25,9 +31,11 @@ const Notifiers = {
 
 function normalizeNotification(notification) {
 	if (typeof notification.type !== 'string' || !Notifiers[notification.type]) {
-		return `Unrecognized 'type' attribute (must be one of: ${Object.keys(Notifiers)})`
+		return `Unrecognized 'type' attribute (must be one of: ${Object.keys(
+			Notifiers,
+		)})`
 	}
-	const notifier = notification.notifier = Notifiers[notification.type]
+	const notifier = (notification.notifier = Notifiers[notification.type])
 	return notifier.normalizeNotification(notification)
 }
 
@@ -50,8 +58,16 @@ export function sendNotifications(notifications, serviceCheck) {
 	if (notifications) {
 		for (const notification of notifications) {
 			queue.Enqueue(() => {
-				logger.info(`Sending notification of type %O for check %O in service %O`, notification.type, serviceCheck.check.name, serviceCheck.service)
-				return notification.notifier.sendNotification(notification, serviceCheck)
+				logger.info(
+					`Sending notification of type %O for check %O in service %O`,
+					notification.type,
+					serviceCheck.check.name,
+					serviceCheck.service,
+				)
+				return notification.notifier.sendNotification(
+					notification,
+					serviceCheck,
+				)
 			})
 		}
 	}

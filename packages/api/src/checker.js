@@ -10,8 +10,15 @@ const docker = new Docker()
 
 async function updateServiceCheck(serviceCheck) {
 	try {
-		logger.info(`Updating check %O for service %O: %O`, serviceCheck.check.name, serviceCheck.service, serviceCheck)
-		const name = (`patrol-${serviceCheck.service}-${serviceCheck.check.name}`).toLowerCase().replace(/[^\w]+/g, '_')
+		logger.info(
+			`Updating check %O for service %O: %O`,
+			serviceCheck.check.name,
+			serviceCheck.service,
+			serviceCheck,
+		)
+		const name = `patrol-${serviceCheck.service}-${serviceCheck.check.name}`
+			.toLowerCase()
+			.replace(/[^\w]+/g, '_')
 		const oldContainer = await docker.getContainer(name)
 		try {
 			await oldContainer.remove()
@@ -53,22 +60,31 @@ async function updateServiceCheck(serviceCheck) {
 			serviceError = error
 		}
 
-		logger.info(`Service check %O for service %O returned %O status`, serviceCheck.check.name, serviceCheck.service, serviceStatus)
-		await model('Checks').update({
-			service: serviceCheck.service,
-			check: serviceCheck.check.name,
-			utcDayOfMonth: new Date().getDate(),
-		}, {
-			service: serviceCheck.service,
-			check: serviceCheck.check.name,
-			createdAt: Date.now(),
-			utcDayOfMonth: new Date().getDate(),
-			duration: Date.now() - startedAt,
+		logger.info(
+			`Service check %O for service %O returned %O status`,
+			serviceCheck.check.name,
+			serviceCheck.service,
 			serviceStatus,
-			serviceError,
-		}, {
-			upsert: true,
-		})
+		)
+		await model('Checks').update(
+			{
+				service: serviceCheck.service,
+				check: serviceCheck.check.name,
+				utcDayOfMonth: new Date().getDate(),
+			},
+			{
+				service: serviceCheck.service,
+				check: serviceCheck.check.name,
+				createdAt: Date.now(),
+				utcDayOfMonth: new Date().getDate(),
+				duration: Date.now() - startedAt,
+				serviceStatus,
+				serviceError,
+			},
+			{
+				upsert: true,
+			},
+		)
 
 		if (serviceCheck.notifications) {
 			if (serviceStatus === 'unhealthy') {
@@ -80,7 +96,12 @@ async function updateServiceCheck(serviceCheck) {
 
 		await container.remove()
 	} catch (error) {
-		logger.error(`Failed to run service check %O for service %O (halting service check)`, error, serviceCheck.check.name, serviceCheck.service)
+		logger.error(
+			`Failed to run service check %O for service %O (halting service check)`,
+			error,
+			serviceCheck.check.name,
+			serviceCheck.service,
+		)
 	} finally {
 		queue.Enqueue({
 			readyAt: Date.now() + serviceCheck.check.interval,
@@ -102,7 +123,7 @@ async function initServiceCheck(serviceCheck) {
 			`Scheduling service check %O for service %O for %O from now`,
 			serviceCheck.check.name,
 			serviceCheck.service,
-			ms((lastRun.createdAt + serviceCheck.check.interval) - Date.now()),
+			ms(lastRun.createdAt + serviceCheck.check.interval - Date.now()),
 		)
 		queue.Enqueue({
 			readyAt: lastRun.createdAt + serviceCheck.check.interval,
@@ -120,11 +141,13 @@ export async function startWithConfig({ config }) {
 	for (const name in config.services) {
 		if (config.services.hasOwnProperty(name)) {
 			for (const check of config.services[name]) {
-				queue.Enqueue(() => initServiceCheck({
-					service: name,
-					check,
-					notifications: config.notifications,
-				}))
+				queue.Enqueue(() =>
+					initServiceCheck({
+						service: name,
+						check,
+						notifications: config.notifications,
+					}),
+				)
 			}
 		}
 	}

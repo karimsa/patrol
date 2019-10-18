@@ -2,9 +2,9 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as util from 'util'
 import * as os from 'os'
-import ms from 'ms'
 import http from 'http'
 
+import ms from 'ms'
 import { logger } from '@karimsa/boa'
 import yargs from 'yargs'
 import yaml from 'js-yaml'
@@ -35,8 +35,7 @@ async function main() {
 			type: 'number',
 			describe: 'Number of operations to run concurrently',
 			default: os.cpus().length,
-		})
-		.argv
+		}).argv
 
 	if (argv._.length !== 0) {
 		console.error(`Unrecognized commands: [${argv._}]`)
@@ -61,7 +60,9 @@ async function main() {
 
 	// Verify the 'services' object
 	if (typeof config.services !== 'object' || Array.isArray(config.services)) {
-		console.error(`'services' property must be provided at the top-level, as a dictionary`)
+		console.error(
+			`'services' property must be provided at the top-level, as a dictionary`,
+		)
 		yargs.showHelp()
 		return
 	}
@@ -75,10 +76,14 @@ async function main() {
 					const check = config.services[name][index]
 
 					if (typeof check.name !== 'string' || !check.name) {
-						console.error(`Error: 'services.${name}[${index}].name' must be a valid string`)
+						console.error(
+							`Error: 'services.${name}[${index}].name' must be a valid string`,
+						)
 						hasErrors = true
 					} else if (typeof check.check !== 'string' || !check.check) {
-						console.error(`Error: 'services.${name}[${index}].check' must be a valid string`)
+						console.error(
+							`Error: 'services.${name}[${index}].check' must be a valid string`,
+						)
 						hasErrors = true
 					}
 
@@ -90,7 +95,9 @@ async function main() {
 						check.interval = ms(check.interval)
 					}
 					if (typeof check.interval !== 'number') {
-						console.error(`Error: 'services.${name}[${index}].interval' is not a valid time interval`)
+						console.error(
+							`Error: 'services.${name}[${index}].interval' is not a valid time interval`,
+						)
 						hasErrors = true
 					}
 
@@ -99,7 +106,9 @@ async function main() {
 					if (!check.image) {
 						check.image = 'patrol-tools'
 					} else if (typeof check.image !== 'string') {
-						console.error(`Error: 'services.${name}[${index}].image' must be a valid docker image`)
+						console.error(
+							`Error: 'services.${name}[${index}].image' must be a valid docker image`,
+						)
 						hasErrors = true
 					}
 				}
@@ -134,7 +143,10 @@ async function main() {
 	if (config.web.port === undefined) {
 		config.web.port = defaultWebConfig.port
 	}
-	if (typeof config.web.port !== 'number' || config.web.port !== Math.floor(config.web.port)) {
+	if (
+		typeof config.web.port !== 'number' ||
+		config.web.port !== Math.floor(config.web.port)
+	) {
 		console.error(`web.port must be a valid integer`)
 		hasErrors = true
 	}
@@ -142,7 +154,10 @@ async function main() {
 	if (config.web.apiPort === undefined) {
 		config.web.apiPort = defaultWebConfig.apiPort
 	}
-	if (typeof config.web.apiPort !== 'number' || config.web.apiPort !== Math.floor(config.web.apiPort)) {
+	if (
+		typeof config.web.apiPort !== 'number' ||
+		config.web.apiPort !== Math.floor(config.web.apiPort)
+	) {
 		console.error(`web.apiPort must be a valid integer`)
 		hasErrors = true
 	}
@@ -174,9 +189,11 @@ async function main() {
 	logger.info(`Started patrol API server on :%O`, server.address().port)
 
 	// Start the first scan
-	await queue.Enqueue(() => startWithConfig({
-		config,
-	}))
+	await queue.Enqueue(() =>
+		startWithConfig({
+			config,
+		}),
+	)
 
 	// Run the worker
 	await queue.PerformWork({

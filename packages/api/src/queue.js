@@ -25,20 +25,22 @@ export function Enqueue(task) {
 }
 
 export function PerformWork({ concurrency = numCPUs }) {
-	return Promise.all([... new Array(concurrency)].map(async () => {
-		while (true) {
-			const task = tasks.pop()
-			if (!task) {
-				await sleep(100)
-				continue
-			}
-			if (task.readyAt && task.readyAt > Date.now()) {
-				tasks.push(task)
-				await sleep(100)
-				continue
-			}
+	return Promise.all(
+		[...new Array(concurrency)].map(async () => {
+			while (true) {
+				const task = tasks.pop()
+				if (!task) {
+					await sleep(100)
+					continue
+				}
+				if (task.readyAt && task.readyAt > Date.now()) {
+					tasks.push(task)
+					await sleep(100)
+					continue
+				}
 
-			await task.run()
-		}
-	}))
+				await task.run()
+			}
+		}),
+	)
 }

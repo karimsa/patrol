@@ -28,10 +28,12 @@ export function createApp(config) {
 	const app = express()
 
 	app.use(morgan('dev'))
-	app.use(cors({
-		origin: 'http://localhost:1234',
-		credentials: true,
-	}))
+	app.use(
+		cors({
+			origin: 'http://localhost:1234',
+			credentials: true,
+		}),
+	)
 
 	const checkList = []
 
@@ -46,51 +48,72 @@ export function createApp(config) {
 		}
 	}
 
-	app.get('/api/config', route(async () => {
-		return {
-			title: config.web.title,
-		}
-	}))
+	app.get(
+		'/api/config',
+		route(async () => {
+			return {
+				title: config.web.title,
+			}
+		}),
+	)
 
-	app.get('/api/checks/history', route(async req => {
-		const { service, check } = req.query
-		if (typeof service !== 'string') {
-			throw new APIError(`'service' must be provided in query, and must be a string`, 400)
-		}
-		if (typeof check !== 'string') {
-			throw new APIError(`'check' must be provided in query, and must be a string`, 400)
-		}
+	app.get(
+		'/api/checks/history',
+		route(async req => {
+			const { service, check } = req.query
+			if (typeof service !== 'string') {
+				throw new APIError(
+					`'service' must be provided in query, and must be a string`,
+					400,
+				)
+			}
+			if (typeof check !== 'string') {
+				throw new APIError(
+					`'check' must be provided in query, and must be a string`,
+					400,
+				)
+			}
 
-		const $limit = parseInt(req.query.$limit, 10)
-		if (typeof $limit !== 'number') {
-			throw new APIError(`'$limit' must be provided in query, and must be a valid integer`, 400)
-		}
+			const $limit = parseInt(req.query.$limit, 10)
+			if (typeof $limit !== 'number') {
+				throw new APIError(
+					`'$limit' must be provided in query, and must be a valid integer`,
+					400,
+				)
+			}
 
-		return model('Checks').find({
-			service,
-			check,
-		}, {
-			limit: $limit,
-		})
-	}))
+			return model('Checks').find(
+				{
+					service,
+					check,
+				},
+				{
+					limit: $limit,
+				},
+			)
+		}),
+	)
 
-	app.get('/api/checks', route(async () => {
-		const checks = await Promise.all(
-			checkList.map(serviceCheck => {
-				return model('Checks').findOne({
-					service: serviceCheck.service,
-					check: serviceCheck.check.name,
-				})
-			})
-		)
+	app.get(
+		'/api/checks',
+		route(async () => {
+			const checks = await Promise.all(
+				checkList.map(serviceCheck => {
+					return model('Checks').findOne({
+						service: serviceCheck.service,
+						check: serviceCheck.check.name,
+					})
+				}),
+			)
 
-		const groups = {}
-		for (const check of checks) {
-			groups[check.service] = groups[check.service] || []
-			groups[check.service].push(check)
-		}
-		return groups
-	}))
+			const groups = {}
+			for (const check of checks) {
+				groups[check.service] = groups[check.service] || []
+				groups[check.service].push(check)
+			}
+			return groups
+		}),
+	)
 
 	return app
 }
