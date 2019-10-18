@@ -17,6 +17,13 @@ function route(fn) {
 	}
 }
 
+class APIError extends Error {
+	constructor(message, status) {
+		super(message)
+		this.status = status
+	}
+}
+
 export function createApp(config) {
 	const app = express()
 
@@ -43,6 +50,28 @@ export function createApp(config) {
 		return {
 			title: config.web.title,
 		}
+	}))
+
+	app.get('/api/checks/history', route(async req => {
+		const { service, check } = req.query
+		if (typeof service !== 'string') {
+			throw new APIError(`'service' must be provided in query, and must be a string`, 400)
+		}
+		if (typeof check !== 'string') {
+			throw new APIError(`'check' must be provided in query, and must be a string`, 400)
+		}
+
+		const $limit = parseInt(req.query.$limit, 10)
+		if (typeof $limit !== 'number') {
+			throw new APIError(`'$limit' must be provided in query, and must be a valid integer`, 400)
+		}
+
+		return model('Checks').find({
+			service,
+			check,
+		}, {
+			limit: $limit,
+		})
 	}))
 
 	app.get('/api/checks', route(async () => {

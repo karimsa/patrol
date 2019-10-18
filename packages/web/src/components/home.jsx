@@ -83,7 +83,7 @@ export function Home() {
 						</div>
 					</div>}
 					{checksState.result && Object.keys(checksState.result).map((service, index) => (
-						<div className={"row" + (index === 0 ? '' : ' mt-5')} key={service}>
+						<div className={"row" + (index === 0 ? '' : ' mt-4')} key={service}>
 							<div className="col">
 								<ServiceStatus service={service} checks={checksState.result[service]} />
 							</div>
