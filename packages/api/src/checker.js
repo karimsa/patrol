@@ -54,13 +54,20 @@ async function updateServiceCheck(serviceCheck) {
 		}
 
 		logger.info(`Service check %O for service %O returned %O status`, serviceCheck.check.name, serviceCheck.service, serviceStatus)
-		await model('Checks').insert({
+		await model('Checks').update({
+			service: serviceCheck.service,
+			check: serviceCheck.check.name,
+			utcDayOfMonth: new Date().getDate(),
+		}, {
 			service: serviceCheck.service,
 			check: serviceCheck.check.name,
 			createdAt: Date.now(),
+			utcDayOfMonth: new Date().getDate(),
 			duration: Date.now() - startedAt,
 			serviceStatus,
 			serviceError,
+		}, {
+			upsert: true,
 		})
 
 		if (serviceCheck.notifications) {
