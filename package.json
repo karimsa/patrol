@@ -17,6 +17,9 @@
 	"devBkp": {
 		"cypress": "^3.4.1"
 	},
+	"dependencies": {
+		"@karimsa/wiz": "^0.8.0"
+	},
 	"devDependencies": {
 		"@karimsa/mono": "^0.1.0",
 		"babel-eslint": "^10.0.3",
