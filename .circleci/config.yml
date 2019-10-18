@@ -17,6 +17,7 @@ jobs:
           paths:
             - ~/.npm
             - ~/.cache
+      - setup_remote_docker
       - run:
           name: Linting
           command: npx @karimsa/mono run lint
