@@ -1,9 +1,0 @@
-{
-  "name": "@karimsa/patrol-tools",
-  "private": true,
-  "scripts": {
-    "build": "docker build -t patrol-tools .",
-    "pretest": "npm run build",
-    "test": "./run-tests.sh"
-  }
-}

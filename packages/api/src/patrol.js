@@ -104,7 +104,7 @@ async function main() {
 					// Normalize image, leaving validation up to docker
 					// Defaulting to custom image
 					if (!check.image) {
-						check.image = 'patrol-tools'
+						check.image = 'byrnedo/alpine-curl'
 					} else if (typeof check.image !== 'string') {
 						console.error(
 							`Error: 'services.${name}[${index}].image' must be a valid docker image`,

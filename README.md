@@ -28,8 +28,8 @@ dbDirectory: db
 ## Map consisting of services to display on your statuspage. Each service
 ## can have multiple checks. Each check runs in its own docker container, so
 ## you have the luxury of picking a docker image that already has the tools
-## you need. If no image is given, it defaults to `patrol-tools` - which is
-## an image built from alpine linux but with curl and ping installed.
+## you need. If no image is given, it defaults to `byrnedo/alpine-curl` - which
+## is an image built from alpine linux but with curl.
 ##
 ## All check commands are simply run using the default shell in the image (/bin/sh).
 services:
