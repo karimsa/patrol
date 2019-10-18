@@ -108,6 +108,12 @@ export function createApp(config) {
 					return model('Checks').findOne({
 						service: serviceCheck.service,
 						check: serviceCheck.check.name,
+					}).then(check => {
+						return check || {
+							service: serviceCheck.service,
+							check: serviceCheck.check.name,
+							serviceStatus: 'inprogress',
+						}
 					})
 				}),
 			)
