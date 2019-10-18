@@ -16,6 +16,11 @@ import { normalizeNotifications } from './notifiers'
 import { createApp } from './api'
 
 const readFile = util.promisify(fs.readFile)
+const defaultWebConfig = {
+	port: 1234,
+	apiPort: 8080,
+	title: 'System Status',
+}
 
 async function main() {
 	const argv = yargs
@@ -119,6 +124,35 @@ async function main() {
 				}
 			}
 		}
+	}
+
+	// Normalize web
+	if (!config.web) {
+		config.web = defaultWebConfig
+	}
+
+	if (config.web.port === undefined) {
+		config.web.port = defaultWebConfig.port
+	}
+	if (typeof config.web.port !== 'number' || config.web.port !== Math.floor(config.web.port)) {
+		console.error(`web.port must be a valid integer`)
+		hasErrors = true
+	}
+
+	if (config.web.apiPort === undefined) {
+		config.web.apiPort = defaultWebConfig.apiPort
+	}
+	if (typeof config.web.apiPort !== 'number' || config.web.apiPort !== Math.floor(config.web.apiPort)) {
+		console.error(`web.apiPort must be a valid integer`)
+		hasErrors = true
+	}
+
+	if (!config.web.title) {
+		config.web.title = defaultWebConfig.title
+	}
+	if (typeof config.web.title !== 'string') {
+		console.error(`web.title should be a string`)
+		hasErrors = true
 	}
 
 	if (hasErrors) {

@@ -2,11 +2,13 @@ import React, {useMemo} from 'react'
 import moment from 'moment'
 
 import { Checks } from '../models/checks'
+import { Config } from '../models/config'
 import { useAsync } from '../state'
 import { ServiceStatus } from './service-status'
 
 export function Home() {
 	const checksState = useAsync(Checks.getAll)
+	const configState = useAsync(Config.get)
 	const [numSystemsUnhealthy, lastUpdated] = useMemo(() => {
 		let numSystemsUnhealthy = 0
 		let lastUpdated = -Infinity
@@ -27,10 +29,20 @@ export function Home() {
 		return [numSystemsUnhealthy, lastUpdated]
 	}, [checksState.result])
 
+	if (configState.result) {
+		document.title = configState.result.title
+	}
+
 	return (
 		<>
-			{checksState.result && numSystemsUnhealthy === 0 && <div className="bg-dark p-5">
+			{checksState.result && numSystemsUnhealthy === 0 && <div className="bg-dark py-5">
 				<div className="container">
+					{configState.result && <div className="row">
+						<div className="col">
+							<h4 className="text-white mb-4">{configState.result.title}</h4>
+						</div>
+					</div>}
+
 					<div className="row">
 						<div className="col">
 							<div className="card border-none rounded overflow-hidden">
@@ -62,7 +74,7 @@ export function Home() {
 				<div className="container">
 					{(checksState.status === 'idle' || checksState.status === 'inprogress') && <div className="row">
 						<div className="col">
-							<p className="lead">Fetching status checks ...</p>
+							<p className="lead text-center">Fetching status checks ...</p>
 						</div>
 					</div>}
 					{checksState.error && <div className="row">

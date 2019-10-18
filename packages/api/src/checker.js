@@ -22,6 +22,7 @@ async function updateServiceCheck(serviceCheck) {
 			}
 		}
 
+		const startedAt = Date.now()
 		const container = await docker.createContainer({
 			name,
 			Image: serviceCheck.check.image,
@@ -57,6 +58,7 @@ async function updateServiceCheck(serviceCheck) {
 			service: serviceCheck.service,
 			check: serviceCheck.check.name,
 			createdAt: Date.now(),
+			duration: Date.now() - startedAt,
 			serviceStatus,
 			serviceError,
 		})
@@ -72,6 +74,11 @@ async function updateServiceCheck(serviceCheck) {
 		await container.remove()
 	} catch (error) {
 		logger.error(`Failed to run service check %O for service %O (halting service check)`, error, serviceCheck.check.name, serviceCheck.service)
+	} finally {
+		queue.Enqueue({
+			readyAt: Date.now() + serviceCheck.check.interval,
+			run: () => updateServiceCheck(serviceCheck),
+		})
 	}
 }
 

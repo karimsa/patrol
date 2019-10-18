@@ -39,6 +39,12 @@ export function createApp(config) {
 		}
 	}
 
+	app.get('/api/config', route(async () => {
+		return {
+			title: config.web.title,
+		}
+	}))
+
 	app.get('/api/checks', route(async () => {
 		const checks = await Promise.all(
 			checkList.map(serviceCheck => {

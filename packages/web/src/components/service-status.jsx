@@ -1,6 +1,7 @@
 import React from 'react'
 // import { jsx, css } from '@emotion/core'
 import moment from 'moment'
+import ms from 'ms'
 
 // const numHistoryBars = 80
 // const barWidth = 2
