@@ -64,7 +64,7 @@ export function ServiceCheckCard({ service, check }) {
 										? 'Unhealthy'
 										: 'In Progress'}
 								</span>
-								<span className="small text-muted ml-2">
+								<span className="small text-muted ml-2 d-none d-sm-inline">
 									{moment(check.createdAt).fromNow()}
 								</span>
 							</p>
