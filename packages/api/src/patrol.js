@@ -80,7 +80,11 @@ async function main() {
 							`Error: 'services.${name}[${index}].name' must be a valid string`,
 						)
 						hasErrors = true
-					} else if (typeof check.cmd !== 'string' || !check.cmd) {
+					}
+					if (Array.isArray(check.cmd)) {
+						check.cmd = check.cmd.join('; ')
+					}
+					if (typeof check.cmd !== 'string' || !check.cmd) {
 						console.error(
 							`Error: 'services.${name}[${index}].cmd' must be a valid string`,
 						)
