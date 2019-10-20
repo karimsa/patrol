@@ -105,15 +105,22 @@ export function createApp(config) {
 		route(async () => {
 			const checks = await Promise.all(
 				checkList.map(serviceCheck => {
-					return model('Checks').findOne({
+					return model('Checks')
+						.findOne({
 						service: serviceCheck.service,
 						check: serviceCheck.check.name,
-					}).then(check => {
-						return check || {
+						})
+						.then(check => {
+							return (
+								check || ({
+									_id: ['todo', Date.now(), serviceCheck.service, serviceCheck.check.name].join('-'),
 							service: serviceCheck.service,
 							check: serviceCheck.check.name,
 							serviceStatus: 'inprogress',
-						}
+									createdAt: Date.now(),
+									output: '',
+								})
+							)
 					})
 				}),
 			)
