@@ -1,24 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
 import qs from 'qs'
 
 const kPromise = Symbol('kPromise')
-
-export function useDemoMode() {
-	const location = useLocation()
-	return {
-		isDemoMode: location.pathname === '/demo',
-		currentUser: {
-			_id: 'demo-mode',
-			type: 'normal',
-			name: 'Michael Scott',
-			email: 'mike@dundermiflin.ca',
-			title: 'Recruiting Specialist',
-			companyName: 'Dunder Mifflin Scranton',
-			pricePlan: 'demo-plan',
-		},
-	}
-}
 
 // like React.useReducer() - but does not care if reducer changes
 function useReducer(reducer, initialState) {
