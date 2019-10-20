@@ -51,7 +51,8 @@ async function updateServiceCheck(serviceCheck) {
 			AttachStdout: true,
 			AttachStderr: true,
 			Tty: false,
-			Cmd: ['/bin/sh', '-c', serviceCheck.check.cmd],
+			Entrypoint: ['/bin/sh', '-c'],
+			Cmd: [serviceCheck.check.cmd],
 			OpenStdin: false,
 			StdinOnce: false,
 		})
