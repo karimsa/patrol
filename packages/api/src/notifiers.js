@@ -30,12 +30,12 @@ const Notifiers = {
 }
 
 function normalizeNotification(notification) {
-	if (typeof notification.type !== 'string' || !Notifiers[notification.type]) {
+	const notifier = (notification.notifier = Notifiers[notification.type])
+	if (!notifier) {
 		return `Unrecognized 'type' attribute (must be one of: ${Object.keys(
 			Notifiers,
 		)})`
 	}
-	const notifier = (notification.notifier = Notifiers[notification.type])
 	return notifier.normalizeNotification(notification)
 }
 
@@ -64,10 +64,9 @@ export function sendNotifications(notifications, serviceCheck) {
 					serviceCheck.check.name,
 					serviceCheck.service,
 				)
-				return notification.notifier.sendNotification(
-					notification,
-					serviceCheck,
-				)
+				const notifier = (notification.notifier =
+					notification.notifier || Notifiers[notification.type])
+				return notifier.sendNotification(notification, serviceCheck)
 			})
 		}
 	}
