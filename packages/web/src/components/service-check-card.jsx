@@ -14,7 +14,7 @@ const svgWidth = numHistoryBars * barWidth + (numHistoryBars - 1) * barSpacing
 
 const colorGray = '#d9dbde'
 const colorGreen = '#00eb8b'
-const colorYellow = '#ffbc62'
+const colorDanger = '#dc3545'
 const colorBlue = '#007bff'
 
 function createElms(length, fn) {
@@ -53,7 +53,7 @@ export function ServiceCheckCard({ service, check }) {
 									(check.serviceStatus === 'healthy'
 										? 'text-success'
 										: check.serviceStatus === 'unhealthy'
-										? 'text-warn'
+										? 'text-danger'
 										: 'text-primary')
 								}
 							>
@@ -112,7 +112,7 @@ export function ServiceCheckCard({ service, check }) {
 											historyEntry.serviceStatus === 'healthy'
 												? colorGreen
 												: historyEntry.serviceStatus === 'unhealthy'
-												? colorYellow
+												? colorDanger
 												: colorBlue
 										}
 									/>
