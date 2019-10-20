@@ -8,6 +8,15 @@ import { sendNotifications } from './notifiers'
 
 const docker = new Docker()
 
+async function dockerImageExists(image) {
+	for (const { RepoTags } of await docker.listImages()) {
+		if (RepoTags && RepoTags.includes(image)) {
+			return true
+		}
+	}
+	return false
+}
+
 async function updateServiceCheck(serviceCheck) {
 	try {
 		logger.info(
@@ -30,7 +39,9 @@ async function updateServiceCheck(serviceCheck) {
 		}
 
 		// verify that the image exists
+		if (!await dockerImageExists(serviceCheck.check.image)) {
 		await docker.pull(serviceCheck.check.image)
+		}
 
 		const startedAt = Date.now()
 		const container = await docker.createContainer({
