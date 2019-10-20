@@ -39,7 +39,11 @@ export function PerformWork({ concurrency = numCPUs }) {
 					continue
 				}
 
-				await task.run()
+				try {
+					await task.run()
+				} catch (error) {
+					console.error(`Task failed: ${error.stack || error}`)
+				}
 			}
 		}),
 	)
