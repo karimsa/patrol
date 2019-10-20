@@ -121,6 +121,28 @@ export function ServiceCheckCard({ service, check }) {
 						)}
 					</div>
 				</div>
+
+				{check.serviceStatus === 'unhealthy' && (
+					<div className="row">
+						<div className="col">
+							<div className="mt-4 p-4 bg-light rounded">
+								<pre
+									className="mb-0"
+									css={css`
+										overflow-x: auto;
+										white-space: pre-wrap;
+										white-space: -moz-pre-wrap;
+										white-space: -pre-wrap;
+										white-space: -o-pre-wrap;
+										word-wrap: break-word;
+									`}
+								>
+									{check.output}
+								</pre>
+							</div>
+						</div>
+					</div>
+				)}
 			</div>
 		</div>
 	)

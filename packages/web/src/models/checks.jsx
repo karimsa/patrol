@@ -16,4 +16,5 @@ export const CheckType = PropTypes.shape({
 	check: PropTypes.string.isRequired,
 	serviceStatus: PropTypes.string.isRequired,
 	createdAt: PropTypes.number.isRequired,
+	output: PropTypes.string.isRequired,
 })

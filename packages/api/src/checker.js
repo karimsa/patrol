@@ -57,22 +57,34 @@ async function updateServiceCheck(serviceCheck) {
 			StdinOnce: false,
 		})
 
+		let checkOutput = ''
 		const stream = await container.attach({
 			stream: true,
 			stdout: true,
 			stderr: true,
 		})
-		stream.pipe(process.stdout)
+		stream.on('data', chunk => {
+			checkOutput += chunk.toString('utf8').replace(/[^\w\d\s]/g, '')
+		})
 
 		await container.start()
 
 		let serviceStatus = 'healthy'
 		let serviceError
+		let serviceExitCode
 		try {
-			await container.wait()
+			const { Error: error, StatusCode } = await container.wait()
+			if (error) {
+				throw new Error(error)
+			}
+
+			serviceExitCode = StatusCode
+			if (serviceExitCode !== 0) {
+				throw new Error(`Check exited with status: ${serviceExitCode}`)
+			}
 		} catch (error) {
 			serviceStatus = 'unhealthy'
-			serviceError = error
+			serviceError = String(error.stack || error)
 		}
 
 		logger.info(
@@ -81,21 +93,23 @@ async function updateServiceCheck(serviceCheck) {
 			serviceCheck.service,
 			serviceStatus,
 		)
+		const updatedCheckEntry = {
+				service: serviceCheck.service,
+				check: serviceCheck.check.name,
+			createdAt: Date.now(),
+				utcDayOfMonth: new Date().getDate(),
+			duration: Date.now() - startedAt,
+			output: checkOutput,
+			serviceStatus,
+			serviceError,
+		}
 		await model('Checks').update(
 			{
 				service: serviceCheck.service,
 				check: serviceCheck.check.name,
 				utcDayOfMonth: new Date().getDate(),
 			},
-			{
-				service: serviceCheck.service,
-				check: serviceCheck.check.name,
-				createdAt: Date.now(),
-				utcDayOfMonth: new Date().getDate(),
-				duration: Date.now() - startedAt,
-				serviceStatus,
-				serviceError,
-			},
+			updatedCheckEntry,
 			{
 				upsert: true,
 			},
