@@ -39,8 +39,8 @@ async function updateServiceCheck(serviceCheck) {
 		}
 
 		// verify that the image exists
-		if (!await dockerImageExists(serviceCheck.check.image)) {
-		await docker.pull(serviceCheck.check.image)
+		if (!(await dockerImageExists(serviceCheck.check.image))) {
+			await docker.pull(serviceCheck.check.image)
 		}
 
 		const startedAt = Date.now()
@@ -94,10 +94,10 @@ async function updateServiceCheck(serviceCheck) {
 			serviceStatus,
 		)
 		const updatedCheckEntry = {
-				service: serviceCheck.service,
-				check: serviceCheck.check.name,
+			service: serviceCheck.service,
+			check: serviceCheck.check.name,
 			createdAt: Date.now(),
-				utcDayOfMonth: new Date().getDate(),
+			utcDayOfMonth: new Date().getDate(),
 			duration: Date.now() - startedAt,
 			output: checkOutput,
 			serviceStatus,
@@ -169,12 +169,12 @@ export async function startWithConfig({ config }) {
 
 	for (const name in config.services) {
 		if (config.services.hasOwnProperty(name)) {
-			for (const check of config.services[name]) {
+			for (const check of config.services[name].checks) {
 				queue.Enqueue(() =>
 					initServiceCheck({
 						service: name,
 						check,
-						notifications: config.notifications,
+						notifications: config.services[name].notifications,
 					}),
 				)
 			}

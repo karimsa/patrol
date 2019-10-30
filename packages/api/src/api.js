@@ -45,7 +45,7 @@ export function createApp(config) {
 
 	for (const name in config.services) {
 		if (config.services.hasOwnProperty(name)) {
-			for (const check of config.services[name]) {
+			for (const check of config.services[name].checks) {
 				checkList.push({
 					service: name,
 					check,
@@ -107,21 +107,26 @@ export function createApp(config) {
 				checkList.map(serviceCheck => {
 					return model('Checks')
 						.findOne({
-						service: serviceCheck.service,
-						check: serviceCheck.check.name,
+							service: serviceCheck.service,
+							check: serviceCheck.check.name,
 						})
 						.then(check => {
 							return (
-								check || ({
-									_id: ['todo', Date.now(), serviceCheck.service, serviceCheck.check.name].join('-'),
-							service: serviceCheck.service,
-							check: serviceCheck.check.name,
-							serviceStatus: 'inprogress',
+								check || {
+									_id: [
+										'todo',
+										Date.now(),
+										serviceCheck.service,
+										serviceCheck.check.name,
+									].join('-'),
+									service: serviceCheck.service,
+									check: serviceCheck.check.name,
+									serviceStatus: 'inprogress',
 									createdAt: Date.now(),
 									output: '',
-								})
+								}
 							)
-					})
+						})
 				}),
 			)
 

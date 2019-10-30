@@ -68,60 +68,6 @@ async function main() {
 	}
 
 	let hasErrors = false
-	for (const name in config.services) {
-		if (config.services.hasOwnProperty(name)) {
-			if (Array.isArray(config.services[name])) {
-				// for (const check of config.services[name]) {
-				for (let index = 0; index < config.services[name].length; ++index) {
-					const check = config.services[name][index]
-
-					if (typeof check.name !== 'string' || !check.name) {
-						console.error(
-							`Error: 'services.${name}[${index}].name' must be a valid string`,
-						)
-						hasErrors = true
-					}
-					if (Array.isArray(check.cmd)) {
-						check.cmd = check.cmd.join('; ')
-					}
-					if (typeof check.cmd !== 'string' || !check.cmd) {
-						console.error(
-							`Error: 'services.${name}[${index}].cmd' must be a valid string`,
-						)
-						hasErrors = true
-					}
-
-					// Normalize `check.interval`, which can either be a direct
-					// number of milliseconds or an ms-recognized string such as `10s`
-					if (check.interval === undefined) {
-						check.interval = 60 * 1000
-					} else if (typeof check.interval === 'string') {
-						check.interval = ms(check.interval)
-					}
-					if (typeof check.interval !== 'number') {
-						console.error(
-							`Error: 'services.${name}[${index}].interval' is not a valid time interval`,
-						)
-						hasErrors = true
-					}
-
-					// Normalize image, leaving validation up to docker
-					// Defaulting to custom image
-					if (!check.image) {
-						check.image = 'byrnedo/alpine-curl'
-					} else if (typeof check.image !== 'string') {
-						console.error(
-							`Error: 'services.${name}[${index}].image' must be a valid docker image`,
-						)
-						hasErrors = true
-					}
-				}
-			} else {
-				console.error(`Error: 'services.${name}' should be an array of checks`)
-				hasErrors = true
-			}
-		}
-	}
 
 	// Normalize notifications
 	if (config.notifications) {
@@ -133,6 +79,102 @@ async function main() {
 				const errors = normalizeNotifications(config.notifications.on_success)
 				if (errors) {
 					console.error(errors)
+					hasErrors = true
+				}
+			}
+		}
+	} else {
+		config.notifications = {}
+	}
+
+	for (const name in config.services) {
+		if (config.services.hasOwnProperty(name)) {
+			if (Array.isArray(config.services[name])) {
+				config.services[name] = {
+					checks: config.services[name],
+					notifications: undefined,
+				}
+			}
+
+			if (
+				typeof config.services[name] !== 'object' ||
+				!Array.isArray(config.services[name].checks)
+			) {
+				throw new Error(
+					`Service should be either an array of checks or have a '.checks' key with an array of checks`,
+				)
+			}
+
+			if (config.services[name].notifications) {
+				if (config.services[name].notifications.on_success) {
+					normalizeNotifications(config.services[name].notifications.on_success)
+					if (config.notifications.on_success) {
+						config.services[name].notifications.on_success.push(
+							...config.notifications.on_success,
+						)
+					}
+				}
+				if (config.services[name].notifications.on_failure) {
+					normalizeNotifications(config.services[name].notifications.on_failure)
+					if (config.notifications.on_failure) {
+						config.services[name].notifications.on_failure.push(
+							...config.notifications.on_failure,
+						)
+					}
+				}
+			} else {
+				config.services[name].notifications = config.notifications
+			}
+
+			for (
+				let index = 0;
+				index < config.services[name].checks.length;
+				++index
+			) {
+				const check = config.services[name].checks[index]
+
+				if (typeof check.name !== 'string' || !check.name) {
+					console.error(
+						`Error: 'services.${name}[${index}].name' must be a valid string (got: ${JSON.stringify(
+							check.name,
+						)})`,
+					)
+					hasErrors = true
+				}
+				if (Array.isArray(check.cmd)) {
+					check.cmd = check.cmd.join('; ')
+				}
+				if (typeof check.cmd !== 'string' || !check.cmd) {
+					console.error(
+						`Error: 'services.${name}[${index}].cmd' must be a valid string (got: ${JSON.stringify(
+							check.cmd,
+						)})`,
+					)
+					hasErrors = true
+				}
+
+				// Normalize `check.interval`, which can either be a direct
+				// number of milliseconds or an ms-recognized string such as `10s`
+				if (check.interval === undefined) {
+					check.interval = 60 * 1000
+				} else if (typeof check.interval === 'string') {
+					check.interval = ms(check.interval)
+				}
+				if (typeof check.interval !== 'number') {
+					console.error(
+						`Error: 'services.${name}[${index}].interval' is not a valid time interval`,
+					)
+					hasErrors = true
+				}
+
+				// Normalize image, leaving validation up to docker
+				// Defaulting to custom image
+				if (!check.image) {
+					check.image = 'byrnedo/alpine-curl'
+				} else if (typeof check.image !== 'string') {
+					console.error(
+						`Error: 'services.${name}[${index}].image' must be a valid docker image`,
+					)
 					hasErrors = true
 				}
 			}
