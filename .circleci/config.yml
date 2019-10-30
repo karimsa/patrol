@@ -37,6 +37,7 @@ jobs:
           name: Deploy latest
           command: |
             if test "$CIRCLE_BRANCH" = "master" && test v`cat package.json | grep version | cut -d: -f2 | cut -d\" -f2` = "`git describe --tags ${CIRCLE_SHA1}`"; then
+              docker tag karimsa/patrol:unstable karimsa/patrol:latest
               docker push karimsa/patrol:latest
             else
               echo "Skipping. No tag found."
