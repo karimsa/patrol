@@ -6,10 +6,16 @@ import cors from 'cors'
 
 import { model } from './db'
 
+const NO_RESPONSE = Symbol('NO_RESPONSE')
+
 function route(fn) {
 	return function(req, res) {
 		fn(req, res)
-			.then(body => res.json(body))
+			.then(body => {
+				if (body !== NO_RESPONSE) {
+					res.json(body)
+				}
+			})
 			.catch(error => {
 				res.status(500)
 				res.json({
@@ -24,6 +30,35 @@ class APIError extends Error {
 		super(message)
 		this.status = status
 	}
+}
+
+function getStatusChecks(checkList) {
+	return Promise.all(
+		checkList.map(serviceCheck => {
+			return model('Checks')
+				.findOne({
+					service: serviceCheck.service,
+					check: serviceCheck.check.name,
+				})
+				.then(check => {
+					return (
+						check || {
+							_id: [
+								'todo',
+								Date.now(),
+								serviceCheck.service,
+								serviceCheck.check.name,
+							].join('-'),
+							service: serviceCheck.service,
+							check: serviceCheck.check.name,
+							serviceStatus: 'inprogress',
+							createdAt: Date.now(),
+							output: '',
+						}
+					)
+				})
+		}),
+	)
 }
 
 export function createApp(config) {
@@ -53,6 +88,32 @@ export function createApp(config) {
 			}
 		}
 	}
+
+	app.get(
+		'/badge',
+		route(async (req, res) => {
+			let numSystemsUnhealthy = 0
+			for (const { serviceStatus } of await getStatusChecks(checkList)) {
+				if (serviceStatus === 'unhealthy') {
+					numSystemsUnhealthy++
+				}
+			}
+
+			const { style = 'for-the-badge' } = req.query
+
+			if (numSystemsUnhealthy === 0) {
+				res.redirect(
+					`https://img.shields.io/badge/patrol-down-red?style=${style}`,
+				)
+			} else {
+				res.redirect(
+					`https://img.shields.io/badge/patrol-up-brightgreen?style=${style}`,
+				)
+			}
+
+			return NO_RESPONSE
+		}),
+	)
 
 	app.get(
 		'/api/config',
@@ -102,41 +163,13 @@ export function createApp(config) {
 
 	app.get(
 		'/api/checks',
-		route(async () => {
-			const checks = await Promise.all(
-				checkList.map(serviceCheck => {
-					return model('Checks')
-						.findOne({
-							service: serviceCheck.service,
-							check: serviceCheck.check.name,
-						})
-						.then(check => {
-							return (
-								check || {
-									_id: [
-										'todo',
-										Date.now(),
-										serviceCheck.service,
-										serviceCheck.check.name,
-									].join('-'),
-									service: serviceCheck.service,
-									check: serviceCheck.check.name,
-									serviceStatus: 'inprogress',
-									createdAt: Date.now(),
-									output: '',
-								}
-							)
-						})
-				}),
-			)
-
-			const groups = {}
-			for (const check of checks) {
+		route(async () =>
+			getStatusChecks(checkList).reduce((groups, check) => {
 				groups[check.service] = groups[check.service] || []
 				groups[check.service].push(check)
-			}
-			return groups
-		}),
+				return groups
+			}, {}),
+		),
 	)
 
 	return app
