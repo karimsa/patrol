@@ -164,7 +164,7 @@ export function createApp(config) {
 	app.get(
 		'/api/checks',
 		route(async () =>
-			getStatusChecks(checkList).reduce((groups, check) => {
+			(await getStatusChecks(checkList)).reduce((groups, check) => {
 				groups[check.service] = groups[check.service] || []
 				groups[check.service].push(check)
 				return groups
