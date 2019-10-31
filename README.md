@@ -32,6 +32,13 @@ This will start patrol on ports `80` and `8080`, where `80` will host the web in
 the API server. It will also give patrol access to your host machine's docker daemon so that it can spin up
 additional containers.
 
+## Badges
+
+To embed live badges in your README or elsewhere, you can simply add `/badge` to the end of your patrol URL.
+For instance, if your public URL is `https://status.myapp.com`, your badge will be available at: `https://status.myapp.com/badge`.
+
+You can also pass a custom `style` query param which is passed directly to [shields.io](https://shields.io). For example, `https://status.myapp.com/badge?style=flat`.
+
 ## License
 
 Licensed under MIT license.
