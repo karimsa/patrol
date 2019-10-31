@@ -103,11 +103,11 @@ export function createApp(config) {
 
 			if (numSystemsUnhealthy === 0) {
 				res.redirect(
-					`https://img.shields.io/badge/patrol-down-red?style=${style}`,
+					`https://img.shields.io/badge/patrol-up-brightgreen?style=${style}`,
 				)
 			} else {
 				res.redirect(
-					`https://img.shields.io/badge/patrol-up-brightgreen?style=${style}`,
+					`https://img.shields.io/badge/patrol-down-red?style=${style}`,
 				)
 			}
 
