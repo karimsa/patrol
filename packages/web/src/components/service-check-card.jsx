@@ -6,6 +6,7 @@ import moment from 'moment'
 
 import { useAsync } from '../state'
 import { Checks, CheckType } from '../models/checks'
+import { ServiceChart } from './service-chart'
 
 const numHistoryBars = 80
 const barWidth = 2
@@ -82,43 +83,52 @@ export function ServiceCheckCard({ service, check }) {
 						{historyState.status === 'inprogress' && (
 							<p className="mb-0 text-muted">Fetching service history ...</p>
 						)}
-						{historyState.result && (
-							<svg
-								className="w-100"
-								viewBox={`0 0 ${svgWidth} 10`}
-								css={css`
-									height: 2rem;
-								`}
-							>
-								{createElms(numDimBars, index => (
-									<rect
-										key={index}
-										height="10"
-										width={barWidth}
-										x={index * (barWidth + barSpacing)}
-										y="0"
-										fill={colorGray}
-									/>
-								))}
+						{historyState.result &&
+							historyState.result[0] &&
+							historyState.result[0].checkType === 'metric' && (
+								<ServiceChart
+									data={historyState.result.map(entry => entry.metric)}
+								/>
+							)}
+						{historyState.result &&
+							historyState.result[0] &&
+							historyState.result[0].checkType !== 'metric' && (
+								<svg
+									className="w-100"
+									viewBox={`0 0 ${svgWidth} 10`}
+									css={css`
+										height: 2rem;
+									`}
+								>
+									{createElms(numDimBars, index => (
+										<rect
+											key={index}
+											height="10"
+											width={barWidth}
+											x={index * (barWidth + barSpacing)}
+											y="0"
+											fill={colorGray}
+										/>
+									))}
 
-								{historyState.result.map((historyEntry, index) => (
-									<rect
-										key={index + numDimBars}
-										height="10"
-										width={barWidth}
-										x={(index + numDimBars) * (barWidth + barSpacing)}
-										y="0"
-										fill={
-											historyEntry.serviceStatus === 'healthy'
-												? colorGreen
-												: historyEntry.serviceStatus === 'unhealthy'
-												? colorDanger
-												: colorBlue
-										}
-									/>
-								))}
-							</svg>
-						)}
+									{historyState.result.map((historyEntry, index) => (
+										<rect
+											key={index + numDimBars}
+											height="10"
+											width={barWidth}
+											x={(index + numDimBars) * (barWidth + barSpacing)}
+											y="0"
+											fill={
+												historyEntry.serviceStatus === 'healthy'
+													? colorGreen
+													: historyEntry.serviceStatus === 'unhealthy'
+													? colorDanger
+													: colorBlue
+											}
+										/>
+									))}
+								</svg>
+							)}
 					</div>
 				</div>
 

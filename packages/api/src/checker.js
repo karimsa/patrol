@@ -99,10 +99,24 @@ async function updateServiceCheck(serviceCheck) {
 			createdAt: Date.now(),
 			utcDayOfMonth: new Date().getDate(),
 			duration: Date.now() - startedAt,
+			checkType: serviceCheck.check.type,
 			output: checkOutput,
+			metric: null,
 			serviceStatus,
 			serviceError,
 		}
+
+		if (serviceCheck.check.type === 'metric') {
+			updatedCheckEntry.metric = Number(updatedCheckEntry.output.trim())
+			if (isNaN(updatedCheckEntry.metric)) {
+				throw new Error(
+					`Non-numeric result outputed by metric: ${JSON.stringify(
+						updatedCheckEntry.output.trim(),
+					)}`,
+				)
+			}
+		}
+
 		await model('Checks').update(
 			{
 				service: serviceCheck.service,
