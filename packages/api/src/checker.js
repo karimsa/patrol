@@ -115,19 +115,21 @@ async function updateServiceCheck(serviceCheck) {
 					)}`,
 				)
 			}
-		}
 
-		await model('Checks').update(
-			{
-				service: serviceCheck.service,
-				check: serviceCheck.check.name,
-				utcDayOfMonth: new Date().getDate(),
-			},
-			updatedCheckEntry,
-			{
-				upsert: true,
-			},
-		)
+			await model('Checks').insert(updatedCheckEntry)
+		} else {
+			await model('Checks').update(
+				{
+					service: serviceCheck.service,
+					check: serviceCheck.check.name,
+					utcDayOfMonth: new Date().getDate(),
+				},
+				updatedCheckEntry,
+				{
+					upsert: true,
+				},
+			)
+		}
 
 		if (serviceCheck.notifications) {
 			if (serviceStatus === 'unhealthy') {
