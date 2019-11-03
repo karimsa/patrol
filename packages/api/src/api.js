@@ -142,7 +142,7 @@ export function createApp(config) {
 			}
 
 			const $limit = parseInt(req.query.$limit, 10)
-			if (typeof $limit !== 'number') {
+			if (typeof $limit !== 'number' || isNaN($limit)) {
 				throw new APIError(
 					`'$limit' must be provided in query, and must be a valid integer`,
 					400,

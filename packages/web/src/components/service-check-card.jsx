@@ -34,6 +34,7 @@ export function ServiceCheckCard({ service, check }) {
 			Checks.getHistory({
 				service,
 				check: check.check,
+				$limit: numHistoryBars,
 			}),
 		[service, check],
 	)
