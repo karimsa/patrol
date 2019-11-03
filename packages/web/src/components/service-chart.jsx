@@ -13,6 +13,7 @@ export function ServiceChart({ data }) {
 						backgroundColor: '#007bff',
 						borderColor: '#007bff',
 						data,
+						fill: false,
 					},
 				],
 			},
