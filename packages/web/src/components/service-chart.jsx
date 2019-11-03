@@ -1,5 +1,6 @@
 import { Chart } from 'chart.js'
 import React from 'react'
+import PropTypes from 'prop-types'
 
 export function ServiceChart({ data }) {
 	const canvasRef = React.createRef()
@@ -35,4 +36,8 @@ export function ServiceChart({ data }) {
 	}, [canvasRef])
 
 	return <canvas ref={canvasRef}></canvas>
+}
+
+ServiceChart.propTypes = {
+	data: PropTypes.arrayOf(PropTypes.number.isRequired).isRequired,
 }
