@@ -86,11 +86,7 @@ export function ServiceCheckCard({ service, check }) {
 						{historyState.result &&
 							historyState.result[0] &&
 							historyState.result[0].checkType === 'metric' && (
-								<ServiceChart
-									data={historyState.result
-										.sort((a, b) => a.createdAt - b.createdAt)
-										.map(entry => entry.metric)}
-								/>
+								<ServiceChart entries={historyState.result} />
 							)}
 						{historyState.result &&
 							historyState.result[0] &&
