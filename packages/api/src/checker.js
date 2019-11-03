@@ -51,14 +51,27 @@ async function updateServiceCheck(serviceCheck) {
 			StdinOnce: false,
 		})
 
-		let checkOutput = ''
-		const stream = await container.attach({
+		let stdout = ''
+		let stderr = ''
+
+		const stdoutStream = await container.attach({
 			stream: true,
 			stdout: true,
+			stderr: false,
+		})
+		stdoutStream.on('data', chunk => {
+			stdout += chunk
+				.toString('utf8')
+				.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, '')
+		})
+
+		const stderrStream = await container.attach({
+			stream: true,
+			stdout: false,
 			stderr: true,
 		})
-		stream.on('data', chunk => {
-			checkOutput += chunk
+		stderrStream.on('data', chunk => {
+			stderr += chunk
 				.toString('utf8')
 				.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, '')
 		})
@@ -90,25 +103,21 @@ async function updateServiceCheck(serviceCheck) {
 			utcDayOfMonth: new Date().getDate(),
 			duration: Date.now() - startedAt,
 			checkType: serviceCheck.check.type,
-			output: checkOutput,
+			output: ['Stdout:', stdout, '-----------------', 'Stderr:', stderr].join(
+				'\n',
+			),
 			metric: null,
 			metricUnit: serviceCheck.check.unit,
 			serviceStatus,
 			serviceError,
 		}
-		logger.info(`Updated service check: %O`, {
-			service: serviceCheck.service,
-			check: serviceCheck.check.name,
-			serviceStatus,
-			updatedCheckEntry,
-		})
 
 		if (serviceCheck.check.type === 'metric') {
-			updatedCheckEntry.metric = Number(updatedCheckEntry.output.trim())
+			updatedCheckEntry.metric = Number(stdout.trim())
 			if (isNaN(updatedCheckEntry.metric)) {
 				throw new Error(
 					`Non-numeric result outputed by metric: ${JSON.stringify(
-						updatedCheckEntry.output.trim(),
+						stdout.trim(),
 					)}`,
 				)
 			}
@@ -127,6 +136,13 @@ async function updateServiceCheck(serviceCheck) {
 				},
 			)
 		}
+
+		logger.info(`Updated service check: %O`, {
+			service: serviceCheck.service,
+			check: serviceCheck.check.name,
+			serviceStatus,
+			updatedCheckEntry,
+		})
 
 		if (serviceCheck.notifications) {
 			if (serviceStatus === 'unhealthy') {
