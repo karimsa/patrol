@@ -1,0 +1,5 @@
+!*.dist.js
+.circleci
+.wiz
+src
+tests
