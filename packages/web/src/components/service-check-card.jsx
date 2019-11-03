@@ -1,8 +1,10 @@
 /** @jsx jsx */
 
+import $ from 'jquery'
 import PropTypes from 'prop-types'
 import { jsx, css } from '@emotion/core'
 import moment from 'moment'
+import { useEffect } from 'react'
 
 import { useAsync } from '../state'
 import { Checks, CheckType } from '../models/checks'
@@ -38,6 +40,10 @@ export function ServiceCheckCard({ service, check }) {
 	const numDimBars = historyState.result
 		? numHistoryBars - historyState.result.length
 		: 0
+
+	useEffect(() => {
+		$('[data-toggle="tooltip"]').tooltip()
+	})
 
 	return (
 		<div className="card">
@@ -112,6 +118,10 @@ export function ServiceCheckCard({ service, check }) {
 									{historyState.result.map((historyEntry, index) => (
 										<rect
 											key={index + numDimBars}
+											title={moment(historyEntry.createdAt).format(
+												'MMM D hh:mm:ss a',
+											)}
+											data-toggle="tooltip"
 											height="10"
 											width={barWidth}
 											x={(index + numDimBars) * (barWidth + barSpacing)}
