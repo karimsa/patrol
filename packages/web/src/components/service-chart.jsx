@@ -3,15 +3,23 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
 
+function num(n) {
+	return Math.round(n * 1e2) / 1e2
+}
+
+function avg(data) {
+	return data.reduce((sum, item) => sum + item, 0) / data.length
+}
+
 export function ServiceChart({ entries }) {
 	const canvasRef = React.createRef()
-	React.useEffect(() => {
-		const metricUnit = entries.reduce(
-			(unit, entry) => unit || entry.metricUnit,
-			undefined,
-		)
-		const data = entries.map(entry => entry.metric)
+	const metricUnit = entries.reduce(
+		(unit, entry) => unit || entry.metricUnit,
+		undefined,
+	)
+	const data = entries.map(entry => entry.metric)
 
+	React.useEffect(() => {
 		const chart = new Chart(canvasRef.current.getContext('2d'), {
 			type: 'line',
 			data: {
@@ -58,7 +66,32 @@ export function ServiceChart({ entries }) {
 		return () => chart.destroy()
 	}, [canvasRef])
 
-	return <canvas ref={canvasRef}></canvas>
+	return (
+		<React.Fragment>
+			<canvas ref={canvasRef}></canvas>
+			<div className="mt-4">
+				<p className="mb-0 text-center">
+					<span className="text-primary mr-2">Average:</span>
+					<span>
+						{num(avg(data))}
+						{metricUnit && ' ' + metricUnit}
+					</span>
+					<span className="mx-2">&bull;</span>
+					<span className="text-primary mr-2">Min:</span>
+					<span>
+						{num(Math.min(...data))}
+						{metricUnit && ' ' + metricUnit}
+					</span>
+					<span className="mx-2">&bull;</span>
+					<span className="text-primary mr-2">Max:</span>
+					<span>
+						{num(Math.max(...data))}
+						{metricUnit && ' ' + metricUnit}
+					</span>
+				</p>
+			</div>
+		</React.Fragment>
+	)
 }
 
 ServiceChart.propTypes = {
