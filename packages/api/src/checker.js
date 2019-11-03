@@ -102,6 +102,7 @@ async function updateServiceCheck(serviceCheck) {
 			checkType: serviceCheck.check.type,
 			output: checkOutput,
 			metric: null,
+			metricUnit: serviceCheck.check.unit,
 			serviceStatus,
 			serviceError,
 		}
