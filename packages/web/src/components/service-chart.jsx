@@ -14,7 +14,7 @@ function avg(data) {
 export function ServiceChart({ entries }) {
 	const canvasRef = React.createRef()
 	const metricUnit = entries.reduce(
-		(unit, entry) => unit || entry.metricUnit,
+		(unit, entry) => entry.metricUnit || unit,
 		undefined,
 	)
 	const data = entries.map(entry => entry.metric)
