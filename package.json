@@ -14,11 +14,8 @@
 		"cy:web": "start-server-and-test 'npm run web' 1234 cy:run",
 		"cy:open": "NODE_ENV=test concurrently -k 'npm run api' 'npm run web' 'cypress open'"
 	},
-	"devBkp": {
-		"cypress": "^3.4.1"
-	},
 	"dependencies": {
-		"@karimsa/wiz": "^0.8.0"
+		"@karimsa/wiz": "^0.8.1"
 	},
 	"devDependencies": {
 		"@karimsa/mono": "^0.1.0",
