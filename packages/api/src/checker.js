@@ -19,12 +19,6 @@ async function dockerImageExists(image) {
 
 async function updateServiceCheck(serviceCheck) {
 	try {
-		logger.info(
-			`Updating check %O for service %O: %O`,
-			serviceCheck.check.name,
-			serviceCheck.service,
-			serviceCheck,
-		)
 		const name = `patrol-${serviceCheck.service}-${serviceCheck.check.name}`
 			.toLowerCase()
 			.replace(/[^\w]+/g, '_')
@@ -64,7 +58,9 @@ async function updateServiceCheck(serviceCheck) {
 			stderr: true,
 		})
 		stream.on('data', chunk => {
-			checkOutput += chunk.toString('utf8').replace(/[^\w\d\s]/g, '')
+			checkOutput += chunk
+				.toString('utf8')
+				.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, '')
 		})
 
 		await container.start()
@@ -87,12 +83,6 @@ async function updateServiceCheck(serviceCheck) {
 			serviceError = String(error.stack || error)
 		}
 
-		logger.info(
-			`Service check %O for service %O returned %O status`,
-			serviceCheck.check.name,
-			serviceCheck.service,
-			serviceStatus,
-		)
 		const updatedCheckEntry = {
 			service: serviceCheck.service,
 			check: serviceCheck.check.name,
@@ -106,6 +96,12 @@ async function updateServiceCheck(serviceCheck) {
 			serviceStatus,
 			serviceError,
 		}
+		logger.info(`Updated service check: %O`, {
+			service: serviceCheck.service,
+			check: serviceCheck.check.name,
+			serviceStatus,
+			updatedCheckEntry,
+		})
 
 		if (serviceCheck.check.type === 'metric') {
 			updatedCheckEntry.metric = Number(updatedCheckEntry.output.trim())
