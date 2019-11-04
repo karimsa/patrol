@@ -16,6 +16,7 @@
     "nedb": "^1.8.0",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.7",
+    "socket.io": "^2.3.0",
     "yargs": "^14.2.0"
   },
   "devDependencies": {
