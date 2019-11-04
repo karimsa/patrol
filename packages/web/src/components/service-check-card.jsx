@@ -37,6 +37,10 @@ export function ServiceCheckCard({ service, check }) {
 		? numHistoryBars - historyState.result.length
 		: 0
 
+	const latestCheck = historyState.result
+		? historyState.result[historyState.result.length - 1]
+		: check
+
 	useEffect(() => {
 		$('[data-toggle="tooltip"]').tooltip()
 	})
@@ -48,7 +52,7 @@ export function ServiceCheckCard({ service, check }) {
 					<div className="col">
 						<div className="d-flex justify-content-between">
 							<p className="font-weight-bold mb-0 d-inline-block">
-								{check.check}
+								{latestCheck.check}
 								{(historyState.status === 'idle' ||
 									historyState.status === 'inprogress') && (
 									<span
@@ -60,22 +64,22 @@ export function ServiceCheckCard({ service, check }) {
 							<p
 								className={
 									'font-weight-bold mb-0 d-inline-block d-flex align-items-center ' +
-									(check.serviceStatus === 'healthy'
+									(latestCheck.serviceStatus === 'healthy'
 										? 'text-success'
-										: check.serviceStatus === 'unhealthy'
+										: latestCheck.serviceStatus === 'unhealthy'
 										? 'text-danger'
 										: 'text-primary')
 								}
 							>
 								<span>
-									{check.serviceStatus === 'healthy'
+									{latestCheck.serviceStatus === 'healthy'
 										? 'Healthy'
 										: check.serviceStatus === 'unhealthy'
 										? 'Unhealthy'
 										: 'In Progress'}
 								</span>
 								<span className="small text-muted ml-2 d-none d-sm-inline">
-									{moment(check.createdAt).fromNow()}
+									{moment(latestCheck.createdAt).fromNow()}
 								</span>
 							</p>
 						</div>
@@ -89,9 +93,6 @@ export function ServiceCheckCard({ service, check }) {
 								{String(historyState.error)}
 							</div>
 						)}
-						{/* {!historyState.result && (
-							<p className="mb-0 text-muted">Fetching service history ...</p>
-						)} */}
 						{historyState.result &&
 							historyState.result[0] &&
 							historyState.result[0].checkType === 'metric' && (
