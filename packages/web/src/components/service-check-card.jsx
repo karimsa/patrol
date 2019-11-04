@@ -144,7 +144,7 @@ export function ServiceCheckCard({ service, check }) {
 					</div>
 				</div>
 
-				{check.serviceStatus === 'unhealthy' && (
+				{latestCheck.serviceStatus === 'unhealthy' && (
 					<div className="row">
 						<div className="col">
 							<div className="mt-4 p-4 bg-light rounded">
@@ -159,7 +159,7 @@ export function ServiceCheckCard({ service, check }) {
 										word-wrap: break-word;
 									`}
 								>
-									{check.output}
+									{latestCheck.output}
 								</pre>
 							</div>
 						</div>
