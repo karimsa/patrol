@@ -1,4 +1,7 @@
-<h1 align="center">patrol</h1>
+<p align="center">
+  <img src=".github/logo.png" alt="Patrol" />
+</p>
+
 <p align="center">Host your own status pages.</p>
 
 <p align="center">
@@ -121,3 +124,5 @@ You can also pass a custom `style` query param which is passed directly to [shie
 Licensed under MIT license.
 
 Copyright &copy; 2019-present Karim Alibhai.
+
+Badge in logo created by **Artdabana@Design** from the Noun Project.
