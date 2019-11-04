@@ -126,6 +126,19 @@ async function updateServiceCheck(serviceCheck) {
 
 			await model('Checks').insert(updatedCheckEntry)
 		} else {
+			const prevEntry = await model('Checks').findOne({
+				service: serviceCheck.service,
+				check: serviceCheck.check.name,
+				utcDayOfMonth: new Date().getDate(),
+			})
+			if (
+				prevEntry &&
+				prevEntry.serviceStatus.endsWith('unhealthy') &&
+				updatedCheckEntry.serviceStatus === 'healthy'
+			) {
+				updatedCheckEntry.serviceStatus = 'was-unhealthy'
+			}
+
 			await model('Checks').update(
 				{
 					service: serviceCheck.service,

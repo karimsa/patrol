@@ -15,9 +15,19 @@ const barSpacing = 2
 const svgWidth = numHistoryBars * barWidth + (numHistoryBars - 1) * barSpacing
 
 const colorGray = '#d9dbde'
-const colorGreen = '#00eb8b'
-const colorDanger = '#dc3545'
 const colorBlue = '#007bff'
+
+const STATUS_COLORS = {
+	healthy: '#00eb8b',
+	unhealthy: '#dc3545',
+	'was-unhealthy': '#ffce00',
+}
+
+const STATUS_COLOR_LABELS = {
+	healthy: 'success',
+	unhealthy: 'danger',
+	'was-unhealthy': 'warning',
+}
 
 function createElms(length, fn) {
 	const elms = new Array(length)
@@ -27,10 +37,10 @@ function createElms(length, fn) {
 	return elms
 }
 
-export function ServiceCheckCard({ service, check }) {
+export function ServiceCheckCard({ service, check: firstCheck }) {
 	const historyState = Checks.getHistory({
 		service,
-		check: check.check,
+		check: firstCheck.check,
 		$limit: numHistoryBars,
 	})
 	const numDimBars = historyState.result
@@ -39,7 +49,7 @@ export function ServiceCheckCard({ service, check }) {
 
 	const latestCheck = historyState.result
 		? historyState.result[historyState.result.length - 1]
-		: check
+		: firstCheck
 
 	useEffect(() => {
 		$('[data-toggle="tooltip"]').tooltip()
@@ -62,20 +72,17 @@ export function ServiceCheckCard({ service, check }) {
 								)}
 							</p>
 							<p
-								className={
-									'font-weight-bold mb-0 d-inline-block d-flex align-items-center ' +
-									(latestCheck.serviceStatus === 'healthy'
-										? 'text-success'
-										: latestCheck.serviceStatus === 'unhealthy'
-										? 'text-danger'
-										: 'text-primary')
-								}
+								className={`font-weight-bold mb-0 d-inline-block d-flex align-items-center text-${
+									STATUS_COLOR_LABELS[latestCheck.serviceStatus]
+								}`}
 							>
 								<span>
 									{latestCheck.serviceStatus === 'healthy'
 										? 'Healthy'
-										: check.serviceStatus === 'unhealthy'
+										: latestCheck.serviceStatus === 'unhealthy'
 										? 'Unhealthy'
+										: latestCheck.serviceStatus === 'was-unhealthy'
+										? 'Healthy (Recovered)'
 										: 'In Progress'}
 								</span>
 								<span className="small text-muted ml-2 d-none d-sm-inline">
@@ -131,11 +138,7 @@ export function ServiceCheckCard({ service, check }) {
 											x={(index + numDimBars) * (barWidth + barSpacing)}
 											y="0"
 											fill={
-												historyEntry.serviceStatus === 'healthy'
-													? colorGreen
-													: historyEntry.serviceStatus === 'unhealthy'
-													? colorDanger
-													: colorBlue
+												STATUS_COLORS[historyEntry.serviceStatus] || colorBlue
 											}
 										/>
 									))}
