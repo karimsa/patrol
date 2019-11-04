@@ -146,15 +146,10 @@ async function updateServiceCheck(serviceCheck) {
 			updatedCheckEntry,
 		})
 
-		if (
-			serviceCheck.service === 'Production API' &&
-			serviceCheck.check.name === 'Login latency'
-		) {
-			io.emit('historyUpdate', {
-				service: serviceCheck.service,
-				check: serviceCheck.check.name,
-			})
-		}
+		io.emit('historyUpdate', {
+			service: serviceCheck.service,
+			check: serviceCheck.check.name,
+		})
 
 		if (serviceCheck.notifications) {
 			if (serviceStatus === 'unhealthy') {
