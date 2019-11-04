@@ -169,7 +169,10 @@ async function main() {
 				// Normalize image, leaving validation up to docker
 				// Defaulting to custom image
 				if (!check.image) {
-					check.image = Config.string('PatrolDefaultImage', 'karimsa/patrol:latest')
+					check.image = Config.string(
+						'PatrolDefaultImage',
+						'karimsa/patrol:latest',
+					)
 				} else if (typeof check.image !== 'string') {
 					console.error(
 						`Error: 'services.${name}[${index}].image' must be a valid docker image`,
