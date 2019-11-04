@@ -9,7 +9,7 @@ import { useEffect } from 'react'
 import { Checks, CheckType } from '../models/checks'
 import { ServiceChart } from './service-chart'
 
-const numHistoryBars = 80
+const numHistoryBars = screen.availWidth > 767 ? 80 : 40
 const barWidth = 2
 const barSpacing = 2
 const svgWidth = numHistoryBars * barWidth + (numHistoryBars - 1) * barSpacing
