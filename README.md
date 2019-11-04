@@ -11,6 +11,7 @@
 </p>
 
  - [Usage](#usage)
+ - [Docker tags](#docker-tags)
  - [Creating a service](#creating-a-service)
  - [Creating health checks](#creating-health-checks)
 	- [Health check images](#health-check-images)
@@ -42,6 +43,13 @@ $ docker run \
 This will start patrol on ports `80` and `8080`, where `80` will host the web interface and `8080` will host
 the API server. It will also give patrol access to your host machine's docker daemon so that it can spin up
 additional containers.
+
+## Docker tags
+
+There are two tags that are published to the docker repo for this project:
+
+ - `latest`: As per docker convention, this is the latest stable release of patrol.
+ - `unstable`: This is the latest copy of the image from `master` - if you like to live life on the edge.
 
 ## Creating a service
 
