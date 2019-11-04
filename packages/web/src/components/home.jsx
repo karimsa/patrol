@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react'
+import React from 'react'
 import moment from 'moment'
+import get from 'lodash/get'
 
 import { Checks } from '../models/checks'
 import { Config } from '../models/config'
@@ -11,6 +12,7 @@ export function Home() {
 	const checksState = Checks.getAll()
 	const configState = useAsync(Config.get)
 	const overallState = useOverallStatus()
+	const overallStatus = get(overallState.result, 'overallStatus', 'inprogress')
 
 	if (configState.result) {
 		document.title = configState.result.title
@@ -18,52 +20,50 @@ export function Home() {
 
 	return (
 		<>
-			{overallState.result && (
-				<div className="bg-dark py-5">
-					<div className="container">
-						{configState.result && (
-							<div className="row">
-								<div className="col">
-									<h4 className="text-white mb-4">
-										{String(configState.result.title)}
-									</h4>
-								</div>
-							</div>
-						)}
+			<div className="bg-dark py-5">
+				<div className="container">
+					<div className="row">
+						<div className="col">
+							<h4 className="text-white mb-4">
+								{configState.result
+									? String(configState.result.title)
+									: 'Status'}
+							</h4>
+						</div>
+					</div>
 
-						<div className="row">
-							<div className="col">
-								<div className="card border-none rounded overflow-hidden">
-									<div
-										className={
-											'card-body text-white d-flex justify-content-between align-items-center' +
-											(overallState.result.overallStatus === 'healthy'
-												? ' bg-success'
-												: overallState.result.overallStatus === 'inprogress'
-												? ' bg-primary'
-												: ' bg-danger')
-										}
-									>
-										<p className="lead mb-0 font-weight-bold">
-											{overallState.result.overallStatus === 'healthy'
-												? 'All Systems Operational'
-												: overallState.result.overallStatus === 'inprogress'
-												? 'Fetching service checks ...'
-												: `${overallState.result.numUnhealthySystems} Systems Are Down`}
+					<div className="row">
+						<div className="col">
+							<div className="card border-none rounded overflow-hidden">
+								<div
+									className={
+										'card-body text-white d-flex justify-content-between align-items-center' +
+										(overallStatus === 'healthy'
+											? ' bg-success'
+											: overallStatus === 'inprogress'
+											? ' bg-primary'
+											: ' bg-danger')
+									}
+								>
+									<p className="lead mb-0 font-weight-bold">
+										{overallStatus === 'healthy'
+											? 'All Systems Operational'
+											: overallStatus === 'inprogress'
+											? 'Fetching service checks ...'
+											: `${overallState.result.numUnhealthySystems} Systems Are Down`}
+									</p>
+									{overallStatus !== 'inprogress' && (
+										<p className="small d-none d-sm-inline-block mb-0">
+											Last updated:{' '}
+											{moment(overallState.result.lastUpdated).fromNow()}
 										</p>
-										{overallState.result.overallStatus !== 'inprogress' && (
-											<p className="small d-none d-sm-inline-block mb-0">
-												Last updated:{' '}
-												{moment(overallState.result.lastUpdated).fromNow()}
-											</p>
-										)}
-									</div>
+									)}
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-			)}
+			</div>
 
 			<div className="bg-muted py-5">
 				<div className="container">
