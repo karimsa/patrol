@@ -188,7 +188,12 @@ async function initServiceCheck(serviceCheck) {
 
 	// If there is a previous fresh run, we only need to update after
 	// the check runs stale
-	if (lastRun && Date.now() < lastRun.createdAt + serviceCheck.check.interval) {
+	// If the last check is fresh but unhealthy, rerun
+	if (
+		lastRun &&
+		lastRun.serviceStatus === 'healthy' &&
+		Date.now() < lastRun.createdAt + serviceCheck.check.interval
+	) {
 		logger.info(
 			`Scheduling service check %O for service %O for %O from now`,
 			serviceCheck.check.name,
