@@ -5,29 +5,12 @@ import { Checks } from '../models/checks'
 import { Config } from '../models/config'
 import { useAsync } from '../state'
 import { ServiceStatus } from './service-status'
+import { useOverallStatus } from '../redux/store'
 
 export function Home() {
 	const checksState = Checks.getAll()
 	const configState = useAsync(Config.get)
-	const [numSystemsUnhealthy, lastUpdated] = useMemo(() => {
-		let numSystemsUnhealthy = 0
-		let lastUpdated = -Infinity
-
-		if (checksState.result) {
-			for (const service in checksState.result) {
-				if (checksState.result.hasOwnProperty(service)) {
-					for (const check of checksState.result[service]) {
-						lastUpdated = Math.max(lastUpdated, check.createdAt)
-						if (check.serviceStatus === 'unhealthy') {
-							numSystemsUnhealthy++
-						}
-					}
-				}
-			}
-		}
-
-		return [numSystemsUnhealthy, lastUpdated]
-	}, [checksState.result])
+	const overallState = useOverallStatus()
 
 	if (configState.result) {
 		document.title = configState.result.title
@@ -35,7 +18,7 @@ export function Home() {
 
 	return (
 		<>
-			{checksState.result && numSystemsUnhealthy === 0 && (
+			{overallState.result && (
 				<div className="bg-dark py-5">
 					<div className="container">
 						{configState.result && (
@@ -51,33 +34,29 @@ export function Home() {
 						<div className="row">
 							<div className="col">
 								<div className="card border-none rounded overflow-hidden">
-									<div className="card-body bg-success text-white d-flex justify-content-between align-items-center">
+									<div
+										className={
+											'card-body text-white d-flex justify-content-between align-items-center' +
+											(overallState.result.overallStatus === 'healthy'
+												? ' bg-success'
+												: overallState.result.overallStatus === 'inprogress'
+												? ' bg-primary'
+												: ' bg-danger')
+										}
+									>
 										<p className="lead mb-0 font-weight-bold">
-											All Systems Operational
+											{overallState.result.overallStatus === 'healthy'
+												? 'All Systems Operational'
+												: overallState.result.overallStatus === 'inprogress'
+												? 'Fetching service checks ...'
+												: `${overallState.result.numUnhealthySystems} Systems Are Down`}
 										</p>
-										<p className="small d-none d-sm-inline-block mb-0">
-											Last updated: {moment(lastUpdated).fromNow()}
-										</p>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			)}
-			{checksState.result && numSystemsUnhealthy > 0 && (
-				<div className="bg-dark p-5">
-					<div className="container">
-						<div className="row">
-							<div className="col">
-								<div className="card border-none rounded overflow-hidden">
-									<div className="card-body bg-danger text-white d-flex justify-content-between align-items-center">
-										<p className="lead mb-0 font-weight-bold">
-											{numSystemsUnhealthy} Systems Are Down
-										</p>
-										<p className="small d-inline-block mb-0">
-											Last updated: {moment(lastUpdated).fromNow()}
-										</p>
+										{overallState.result.overallStatus !== 'inprogress' && (
+											<p className="small d-none d-sm-inline-block mb-0">
+												Last updated:{' '}
+												{moment(overallState.result.lastUpdated).fromNow()}
+											</p>
+										)}
 									</div>
 								</div>
 							</div>
