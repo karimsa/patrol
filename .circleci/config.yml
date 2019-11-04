@@ -28,9 +28,11 @@ jobs:
           name: Run tests
           command: npx @karimsa/mono test
       - run:
+          name: Build image
+          command: docker build -t karimsa/patrol:unstable .
+      - run:
           name: Deploy unstable
           command: |
-            docker build -t karimsa/patrol:unstable .
             docker login -u $DOCKER_USER -p $DOCKER_PASS
             docker push karimsa/patrol:unstable
       - run:
