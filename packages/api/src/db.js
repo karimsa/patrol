@@ -67,11 +67,7 @@ function createModel(name, dbPath, defaultOpts = {}) {
 
 export function initDB(dbPath) {
 	Object.assign(db, {
-		Checks: createModel('checks', dbPath, {
-			sort: {
-				createdAt: 1,
-			},
-		}),
+		Checks: createModel('checks', dbPath),
 	})
 }
 

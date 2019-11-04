@@ -7,7 +7,7 @@ import { useAsync } from '../state'
 import { ServiceStatus } from './service-status'
 
 export function Home() {
-	const checksState = useAsync(Checks.getAll)
+	const checksState = Checks.getAll()
 	const configState = useAsync(Config.get)
 	const [numSystemsUnhealthy, lastUpdated] = useMemo(() => {
 		let numSystemsUnhealthy = 0
@@ -88,8 +88,7 @@ export function Home() {
 
 			<div className="bg-muted py-5">
 				<div className="container">
-					{(checksState.status === 'idle' ||
-						checksState.status === 'inprogress') && (
+					{!checksState.result && (
 						<div className="row">
 							<div className="col">
 								<p className="lead text-center">Fetching status checks ...</p>

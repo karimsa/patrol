@@ -2,7 +2,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as util from 'util'
 import * as os from 'os'
-import http from 'http'
 
 import ms from 'ms'
 import { logger } from '@karimsa/boa'
@@ -204,8 +203,7 @@ async function main() {
 	initDB(config.dbDirectory)
 
 	// Create the API server
-	const app = createApp(config)
-	const server = http.createServer(app)
+	const { server } = createApp(config)
 	await new Promise((resolve, reject) => {
 		server.on('error', reject)
 		server.listen(config.port || 8080, resolve)

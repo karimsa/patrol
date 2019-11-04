@@ -5,6 +5,7 @@ import ms from 'ms'
 import { model } from './db'
 import * as queue from './queue'
 import { sendNotifications } from './notifiers'
+import { io } from './api'
 
 const docker = new Docker()
 
@@ -49,6 +50,7 @@ async function updateServiceCheck(serviceCheck) {
 			Cmd: [serviceCheck.check.cmd],
 			OpenStdin: false,
 			StdinOnce: false,
+			AutoRemove: true,
 		})
 
 		let stdout = ''
@@ -144,6 +146,16 @@ async function updateServiceCheck(serviceCheck) {
 			updatedCheckEntry,
 		})
 
+		if (
+			serviceCheck.service === 'Production API' &&
+			serviceCheck.check.name === 'Login latency'
+		) {
+			io.emit('historyUpdate', {
+				service: serviceCheck.service,
+				check: serviceCheck.check.name,
+			})
+		}
+
 		if (serviceCheck.notifications) {
 			if (serviceStatus === 'unhealthy') {
 				sendNotifications(serviceCheck.notifications.on_failure, serviceCheck)
@@ -151,8 +163,6 @@ async function updateServiceCheck(serviceCheck) {
 				sendNotifications(serviceCheck.notifications.on_success, serviceCheck)
 			}
 		}
-
-		await container.remove()
 	} catch (error) {
 		logger.error(
 			`Failed to run service check %O for service %O (halting service check)`,
@@ -169,10 +179,17 @@ async function updateServiceCheck(serviceCheck) {
 }
 
 async function initServiceCheck(serviceCheck) {
-	const lastRun = await model('Checks').findOne({
-		service: serviceCheck.service,
-		check: serviceCheck.check.name,
-	})
+	const lastRun = await model('Checks').findOne(
+		{
+			service: serviceCheck.service,
+			check: serviceCheck.check.name,
+		},
+		{
+			sort: {
+				createdAt: -1,
+			},
+		},
+	)
 
 	// If there is a previous fresh run, we only need to update after
 	// the check runs stale

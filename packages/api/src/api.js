@@ -1,8 +1,11 @@
 import * as path from 'path'
+import * as http from 'http'
 
 import express from 'express'
 import morgan from 'morgan'
 import cors from 'cors'
+import initSocketIO from 'socket.io'
+import { logger } from '@karimsa/boa'
 
 import { model } from './db'
 
@@ -36,10 +39,17 @@ function getStatusChecks(checkList) {
 	return Promise.all(
 		checkList.map(serviceCheck => {
 			return model('Checks')
-				.findOne({
-					service: serviceCheck.service,
-					check: serviceCheck.check.name,
-				})
+				.findOne(
+					{
+						service: serviceCheck.service,
+						check: serviceCheck.check.name,
+					},
+					{
+						sort: {
+							createdAt: -1,
+						},
+					},
+				)
 				.then(check => {
 					return (
 						check || {
@@ -61,9 +71,33 @@ function getStatusChecks(checkList) {
 	)
 }
 
+export const io = {
+	listeners: [],
+	emit(event, data) {
+		for (const fn of this.listeners) {
+			fn(event, data)
+		}
+	},
+}
+
 export function createApp(config) {
 	const app = express()
+	const server = http.createServer(app)
+	const socketServer = initSocketIO(server)
 
+	socketServer.on('connection', sock => {
+		logger.info(`Socket connected`)
+		sock.on('close', () => {
+			logger.info(`Socket disconnected`)
+		})
+	})
+
+	io.listeners.push(function(event, data) {
+		logger.info(`Broadcasting socket event %O`, event)
+		socketServer.emit(event, data)
+	})
+
+	app.set('etag', false)
 	app.use(express.static(path.resolve(__dirname, '..', 'web', 'dist')))
 	app.use(morgan('dev'))
 
@@ -149,15 +183,19 @@ export function createApp(config) {
 				)
 			}
 
-			return model('Checks').find(
+			const entries = await model('Checks').find(
 				{
 					service,
 					check,
 				},
 				{
 					limit: $limit,
+					sort: {
+						createdAt: -1,
+					},
 				},
 			)
+			return entries.reverse()
 		}),
 	)
 
@@ -172,5 +210,8 @@ export function createApp(config) {
 		),
 	)
 
-	return app
+	return {
+		app,
+		server,
+	}
 }

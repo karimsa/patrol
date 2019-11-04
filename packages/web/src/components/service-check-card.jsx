@@ -6,7 +6,6 @@ import { jsx, css } from '@emotion/core'
 import moment from 'moment'
 import { useEffect } from 'react'
 
-import { useAsync } from '../state'
 import { Checks, CheckType } from '../models/checks'
 import { ServiceChart } from './service-chart'
 
@@ -29,15 +28,11 @@ function createElms(length, fn) {
 }
 
 export function ServiceCheckCard({ service, check }) {
-	const historyState = useAsync(
-		() =>
-			Checks.getHistory({
-				service,
-				check: check.check,
-				$limit: numHistoryBars,
-			}),
-		[service, check],
-	)
+	const historyState = Checks.getHistory({
+		service,
+		check: check.check,
+		$limit: numHistoryBars,
+	})
 	const numDimBars = historyState.result
 		? numHistoryBars - historyState.result.length
 		: 0
@@ -54,6 +49,13 @@ export function ServiceCheckCard({ service, check }) {
 						<div className="d-flex justify-content-between">
 							<p className="font-weight-bold mb-0 d-inline-block">
 								{check.check}
+								{(historyState.status === 'idle' ||
+									historyState.status === 'inprogress') && (
+									<span
+										className="ml-2 spinner-grow spinner-grow-sm text-primary"
+										role="status"
+									></span>
+								)}
 							</p>
 							<p
 								className={
@@ -87,9 +89,9 @@ export function ServiceCheckCard({ service, check }) {
 								{String(historyState.error)}
 							</div>
 						)}
-						{historyState.status === 'inprogress' && (
+						{/* {!historyState.result && (
 							<p className="mb-0 text-muted">Fetching service history ...</p>
-						)}
+						)} */}
 						{historyState.result &&
 							historyState.result[0] &&
 							historyState.result[0].checkType === 'metric' && (

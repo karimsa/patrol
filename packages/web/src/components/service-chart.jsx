@@ -1,7 +1,8 @@
 import { Chart } from 'chart.js'
-import React from 'react'
+import React, { useEffect, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
+import ms from 'ms'
 
 function num(n) {
 	return Math.round(n * 1e2) / 1e2
@@ -11,6 +12,14 @@ function avg(data) {
 	return data.reduce((sum, item) => sum + item, 0) / data.length
 }
 
+function createLabels(entries) {
+	return entries.map(entry =>
+		moment(entry.createdAt).format('MMM D hh:mm:ss a'),
+	)
+}
+
+const weakRefs = new WeakMap()
+
 export function ServiceChart({ entries }) {
 	const canvasRef = React.createRef()
 	const metricUnit = entries.reduce(
@@ -18,14 +27,20 @@ export function ServiceChart({ entries }) {
 		undefined,
 	)
 	const data = entries.map(entry => entry.metric)
+	const interval =
+		entries.reduce((sum, entry, index) => {
+			if (index === 0) {
+				return sum
+			}
+			return sum + (entries[index].createdAt - entries[index - 1].createdAt)
+		}, 0) /
+		(entries.length - 1)
 
-	React.useEffect(() => {
-		const chart = new Chart(canvasRef.current.getContext('2d'), {
+	const chartOptions = useMemo(
+		() => ({
 			type: 'line',
 			data: {
-				labels: entries.map(entry =>
-					moment(entry.createdAt).format('MMM D hh:mm:ss a'),
-				),
+				labels: createLabels(entries),
 				datasets: [
 					{
 						backgroundColor: '#007bff',
@@ -62,9 +77,37 @@ export function ServiceChart({ entries }) {
 					],
 				},
 			},
-		})
+		}),
+		[Date],
+	)
+
+	useEffect(() => {
+		const chart = new Chart(canvasRef.current.getContext('2d'), chartOptions)
+		weakRefs.set(chartOptions, chart)
 		return () => chart.destroy()
-	}, [canvasRef])
+	}, [Date])
+
+	const chart = weakRefs.get(chartOptions)
+	if (chart) {
+		chartOptions.options.scales.yAxes[0].ticks.suggestedMin = Math.min(...data)
+		chartOptions.options.scales.yAxes[0].ticks.suggestedMax = Math.max(...data)
+
+		while (chartOptions.data.labels.length > 0) {
+			chartOptions.data.labels.pop()
+		}
+		createLabels(entries).forEach(label => {
+			chartOptions.data.labels.push(label)
+		})
+
+		while (chartOptions.data.datasets[0].data.length > 0) {
+			chartOptions.data.datasets[0].data.pop()
+		}
+		entries.forEach(entry => {
+			chartOptions.data.datasets[0].data.push(entry.metric)
+		})
+
+		chart.update()
+	}
 
 	return (
 		<React.Fragment>
@@ -88,6 +131,9 @@ export function ServiceChart({ entries }) {
 						{num(Math.max(...data))}
 						{metricUnit && ' ' + metricUnit}
 					</span>
+					<span className="mx-2">&bull;</span>
+					<span className="text-primary mr-2">Interval:</span>
+					<span>{ms(interval)}</span>
 				</p>
 			</div>
 		</React.Fragment>
