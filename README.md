@@ -48,9 +48,9 @@ For example, a simple service assigned to 'google.ca' could have the configurati
 
 ```yaml
 services:
-	google.ca:
-		- name: Delivers homepage
-		  cmd: 'curl -fsSL https://www.google.ca/'
+  google.ca:
+    - name: Delivers homepage
+      cmd: 'curl -fsSL https://www.google.ca/'
 ```
 
 ## Creating health checks
@@ -65,9 +65,9 @@ For example:
 
 ```yaml
 services:
-	My App:
-		- name: Delivers login
-		  cmd: 'curl -fsSL https://myapp.com/login | grep MyApp'
+  My App:
+    - name: Delivers login
+      cmd: 'curl -fsSL https://myapp.com/login | grep MyApp'
 ```
 
 Since the errors are carried forward in the pipe (patrol enables the `-e` flag by default when executing your scripts), and `grep` fails when it cannot find the query, this check is complete.
@@ -88,13 +88,13 @@ Here's an example for redis:
 
 ```yaml
 services:
-	Redis:
-		- name: Responds to PING
-		  image: redis:5
-		  cmd: 'redis-cli -h myredis.com -a myauth PING'
-		- name: Job stream exists
-		  image: redis:5
-		  cmd: 'redis-cli -h myredis.com -a myauth XINFO STREAM mystream'
+  Redis:
+    - name: Responds to PING
+      image: redis:5
+      cmd: 'redis-cli -h myredis.com -a myauth PING'
+    - name: Job stream exists
+      image: redis:5
+      cmd: 'redis-cli -h myredis.com -a myauth XINFO STREAM mystream'
 ```
 
 Currently, patrol does not support encrypting your sensitive information when pushing to git, so please be weary.
