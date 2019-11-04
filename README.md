@@ -1,6 +1,6 @@
-<p align="center">
+<h1 align="center">
   <img src=".github/logo.png" alt="Patrol" />
-</p>
+</h1>
 
 <p align="center">Host your own status pages.</p>
 
