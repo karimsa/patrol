@@ -4,7 +4,7 @@ import * as util from 'util'
 import * as os from 'os'
 
 import ms from 'ms'
-import { logger } from '@karimsa/boa'
+import { Config, logger } from '@karimsa/boa'
 import yargs from 'yargs'
 import yaml from 'js-yaml'
 
@@ -169,7 +169,7 @@ async function main() {
 				// Normalize image, leaving validation up to docker
 				// Defaulting to custom image
 				if (!check.image) {
-					check.image = 'byrnedo/alpine-curl'
+					check.image = Config.string('PatrolDefaultImage', 'karimsa/patrol:latest')
 				} else if (typeof check.image !== 'string') {
 					console.error(
 						`Error: 'services.${name}[${index}].image' must be a valid docker image`,
