@@ -140,6 +140,20 @@ async function main() {
 					)
 					hasErrors = true
 				}
+				if (
+					check.hasOwnProperty('historySize') &&
+					(typeof check.historySize !== 'number' ||
+						Math.floor(check.historySize) !== check.historySize)
+				) {
+					console.error(
+						`Error: 'services.${name}[${index}].historySize' must be a valid integer (got: ${JSON.stringify(
+							check.historySize,
+						)})`,
+					)
+					hasErrors = true
+				} else if (check.historySize == null) {
+					check.historySize = 80
+				}
 				if (Array.isArray(check.cmd)) {
 					check.cmd = check.cmd.join('; ')
 				}

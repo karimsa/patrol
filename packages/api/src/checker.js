@@ -18,6 +18,41 @@ async function dockerImageExists(image) {
 	return false
 }
 
+async function sweepServiceHistory(service, check, maxHistorySize) {
+	const historySize = await model('Checks').count({
+		service,
+		check,
+	})
+	const numDelete = historySize - maxHistorySize
+
+	if (numDelete > 0) {
+		logger.debug(
+			'patrol',
+			`History size has been exceeded for ${service}.${name} - deleting ${numDelete} items`,
+		)
+		for (let i = 0; i < numDelete; i++) {
+			const oldest = await model('Checks').findOne(
+				{
+					service,
+					check,
+				},
+				{
+					sort: {
+						createdAt: 1,
+					},
+				},
+			)
+			await model('Checks').remove(oldest)
+		}
+	} else {
+		logger.debug(
+			'patrol',
+			`%O entries currently exist for ${service}.${name}, keeping all`,
+			historySize,
+		)
+	}
+}
+
 async function updateServiceCheck(serviceCheck) {
 	try {
 		const name = `patrol-${serviceCheck.service}-${serviceCheck.check.name}`
@@ -113,6 +148,8 @@ async function updateServiceCheck(serviceCheck) {
 			serviceStatus,
 			serviceError,
 		}
+
+		await sweepServiceHistory(serviceCheck.service, serviceCheck.check.name)
 
 		if (serviceCheck.check.type === 'metric') {
 			updatedCheckEntry.metric = Number(stdout.trim())

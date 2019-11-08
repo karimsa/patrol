@@ -119,6 +119,7 @@ Currently, patrol does not support encrypting your sensitive information when pu
  - **image** (default: `karimsa/patrol`): this is the Docker image within which you want to run the command. It defaults to the patrol image which contains `curl`, `ping`, and `jq`.
  - **type** (optional; values: 'metric'): if specified as 'metric', the health check will considered to be of type metric and therefore its stdout will be parsed as a numeric value.
  - **unit** (optional): if specified and type is metric, will be used when displaying the metric chart on the status page.
+ - **historySize** (default: 80): this is the maximum number of data points to persist. If the history of a service ever exceeds this amount, the oldest data points will be discarded from storage. This helps keep the storage of patrol low - especially since the underlying db driver is bad at handling large amounts of data.
 
 ## Badges
 

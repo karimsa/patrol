@@ -39,6 +39,15 @@ function createModel(name, dbPath, defaultOpts = {}) {
 			})
 		},
 
+		count(filter) {
+			return new Promise((resolve, reject) => {
+				store.count(filter, (error, count) => {
+					if (error) reject(error)
+					else resolve(count)
+				})
+			})
+		},
+
 		find(filter, opts = {}) {
 			return new Promise((resolve, reject) => {
 				let cursor = store.find(filter).sort(opts.sort || defaultSort)
