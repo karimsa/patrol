@@ -28,7 +28,7 @@ async function sweepServiceHistory(service, check, maxHistorySize) {
 	if (numDelete > 0) {
 		logger.debug(
 			'patrol',
-			`History size has been exceeded for ${service}.${name} - deleting ${numDelete} items`,
+			`History size has been exceeded for ${service}.${check} - deleting ${numDelete} items`,
 		)
 		for (let i = 0; i < numDelete; i++) {
 			const oldest = await model('Checks').findOne(
@@ -47,7 +47,7 @@ async function sweepServiceHistory(service, check, maxHistorySize) {
 	} else {
 		logger.debug(
 			'patrol',
-			`%O entries currently exist for ${service}.${name}, keeping all`,
+			`%O entries currently exist for ${service}.${check}, keeping all`,
 			historySize,
 		)
 	}
