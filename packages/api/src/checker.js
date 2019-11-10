@@ -149,7 +149,7 @@ async function updateServiceCheck(serviceCheck) {
 			serviceError,
 		}
 
-		await sweepServiceHistory(serviceCheck.service, serviceCheck.check.name)
+		await sweepServiceHistory(serviceCheck.service, serviceCheck.check.name, serviceCheck.check.historySize)
 
 		if (serviceCheck.check.type === 'metric') {
 			updatedCheckEntry.metric = Number(stdout.trim())
