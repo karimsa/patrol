@@ -30,7 +30,7 @@ function createModel(name, dbPath, defaultOpts = {}) {
 			})
 		},
 
-		delete(filter, opts = {}) {
+		remove(filter, opts = {}) {
 			return new Promise((resolve, reject) => {
 				store.remove(filter, opts, err => {
 					if (err) reject(err)
