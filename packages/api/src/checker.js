@@ -30,8 +30,7 @@ async function sweepServiceHistory(service, check, maxHistorySize) {
 			'patrol',
 			`History size has been exceeded for ${service}.${check} - deleting ${numDelete} items`,
 		)
-		for (let i = 0; i < numDelete; i++) {
-			const oldest = await model('Checks').findOne(
+		const itemsToDelete = await model('Checks').find(
 				{
 					service,
 					check,
@@ -40,9 +39,14 @@ async function sweepServiceHistory(service, check, maxHistorySize) {
 					sort: {
 						createdAt: 1,
 					},
+				limit: numDelete,
 				},
 			)
-			await model('Checks').remove(oldest)
+		for (let i = 0; i < itemsToDelete.length; i++) {
+			process.stdout.write(
+				`\rDeleting item ${i+1} of ${numDelete} for ${service}.${check}`,
+			)
+			await model('Checks').remove(itemsToDelete[i])
 		}
 	} else {
 		logger.debug(
@@ -149,7 +153,11 @@ async function updateServiceCheck(serviceCheck) {
 			serviceError,
 		}
 
-		await sweepServiceHistory(serviceCheck.service, serviceCheck.check.name, serviceCheck.check.historySize)
+		await sweepServiceHistory(
+			serviceCheck.service,
+			serviceCheck.check.name,
+			serviceCheck.check.historySize,
+		)
 
 		if (serviceCheck.check.type === 'metric') {
 			updatedCheckEntry.metric = Number(stdout.trim())
