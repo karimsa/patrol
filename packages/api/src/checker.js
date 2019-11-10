@@ -31,20 +31,20 @@ async function sweepServiceHistory(service, check, maxHistorySize) {
 			`History size has been exceeded for ${service}.${check} - deleting ${numDelete} items`,
 		)
 		const itemsToDelete = await model('Checks').find(
-				{
-					service,
-					check,
+			{
+				service,
+				check,
+			},
+			{
+				sort: {
+					createdAt: 1,
 				},
-				{
-					sort: {
-						createdAt: 1,
-					},
 				limit: numDelete,
-				},
-			)
+			},
+		)
 		for (let i = 0; i < itemsToDelete.length; i++) {
 			process.stdout.write(
-				`\rDeleting item ${i+1} of ${numDelete} for ${service}.${check}`,
+				`\rDeleting item ${i + 1} of ${numDelete} for ${service}.${check}`,
 			)
 			await model('Checks').remove(itemsToDelete[i])
 		}
