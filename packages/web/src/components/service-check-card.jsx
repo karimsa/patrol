@@ -4,7 +4,7 @@ import $ from 'jquery'
 import PropTypes from 'prop-types'
 import { jsx, css } from '@emotion/core'
 import moment from 'moment'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Checks, CheckType } from '../models/checks'
 import { ServiceChart } from './service-chart'
@@ -46,10 +46,14 @@ export function ServiceCheckCard({ service, check: firstCheck }) {
 	const numDimBars = historyState.result
 		? numHistoryBars - historyState.result.length
 		: 0
-
 	const latestCheck = historyState.result
 		? historyState.result[historyState.result.length - 1]
 		: firstCheck
+
+	let [selectedCheck, setSelectedCheck] = useState()
+	if (!selectedCheck && latestCheck.status === 'unhealthy') {
+		setSelectedCheck((selectedCheck = latestCheck))
+	}
 
 	useEffect(() => {
 		$('[data-toggle="tooltip"]').tooltip()
@@ -137,6 +141,10 @@ export function ServiceCheckCard({ service, check: firstCheck }) {
 											width={barWidth}
 											x={(index + numDimBars) * (barWidth + barSpacing)}
 											y="0"
+											className="clickable"
+											onClick={() => {
+												setSelectedCheck(historyEntry)
+											}}
 											fill={
 												STATUS_COLORS[historyEntry.serviceStatus] || colorBlue
 											}
@@ -147,7 +155,7 @@ export function ServiceCheckCard({ service, check: firstCheck }) {
 					</div>
 				</div>
 
-				{latestCheck.serviceStatus === 'unhealthy' && (
+				{selectedCheck && (
 					<div className="row">
 						<div className="col">
 							<div className="mt-4 p-4 bg-light rounded">
@@ -162,7 +170,10 @@ export function ServiceCheckCard({ service, check: firstCheck }) {
 										word-wrap: break-word;
 									`}
 								>
-									{latestCheck.output}
+									Date:{' '}
+									{moment(selectedCheck.createdAt).format('MMM D hh:mm:ss a')}
+									{'\n\n'}
+									{selectedCheck.output}
 								</pre>
 							</div>
 						</div>
