@@ -182,19 +182,44 @@ async function updateServiceCheck(serviceCheck) {
 				updatedCheckEntry.serviceStatus === 'healthy'
 			) {
 				updatedCheckEntry.serviceStatus = 'was-unhealthy'
+				updatedCheckEntry.output = [
+					'Output of last failure:',
+					prevEntry.output,
+					'',
+					'Output of updated success:',
+					updatedCheckEntry.output,
+				].join('\n')
 			}
 
-			await model('Checks').update(
-				{
-					service: serviceCheck.service,
-					check: serviceCheck.check.name,
-					utcDayOfMonth: new Date().getDate(),
-				},
-				updatedCheckEntry,
-				{
-					upsert: true,
-				},
-			)
+			if (prevEntry && updatedCheckEntry.serviceStatus === prevEntry.serviceStatus) {
+				await model('Checks').update(
+					{
+						service: serviceCheck.service,
+						check: serviceCheck.check.name,
+						utcDayOfMonth: new Date().getDate(),
+					},
+					{
+						$set: {
+							createdAt: new Date(),
+						},
+					},
+					{
+						upsert: true,
+					},
+				)
+			} else if (!prevEntry || updatedCheckEntry.serviceStatus !== prevEntry.serviceStatus) {
+				await model('Checks').update(
+					{
+						service: serviceCheck.service,
+						check: serviceCheck.check.name,
+						utcDayOfMonth: new Date().getDate(),
+					},
+					updatedCheckEntry,
+					{
+						upsert: true,
+					},
+				)
+			}
 		}
 
 		logger.info(`Updated service check: %O`, {
