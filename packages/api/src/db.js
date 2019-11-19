@@ -9,6 +9,11 @@ function createModel(name, dbPath, defaultOpts = {}) {
 		filename: path.resolve(dbPath, name + '.db'),
 		autoload: true,
 	})
+
+	// Auto compact every 30 mins, to ensure that we are not over-storing
+	// data
+	store.persistence.setAutocompactionInterval(1000 * 60 * 30)
+
 	const defaultSort = defaultOpts.sort || {}
 
 	return {
