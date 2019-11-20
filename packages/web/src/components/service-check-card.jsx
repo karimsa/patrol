@@ -51,7 +51,7 @@ export function ServiceCheckCard({ service, check: firstCheck }) {
 		: firstCheck
 
 	let [selectedCheck, setSelectedCheck] = useState()
-	if (!selectedCheck && latestCheck.status === 'unhealthy') {
+	if (!selectedCheck && latestCheck && latestCheck.status === 'unhealthy') {
 		setSelectedCheck((selectedCheck = latestCheck))
 	}
 
