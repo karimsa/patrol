@@ -28,13 +28,19 @@ export function ServiceChart({ entries }) {
 	)
 	const data = entries.map(entry => entry.metric)
 	const interval =
-		entries.reduce((sum, entry, index) => {
-			if (index === 0) {
-				return sum
-			}
-			return sum + (entries[index].createdAt - entries[index - 1].createdAt)
-		}, 0) /
-		(entries.length - 1)
+		entries.length > 1
+			? ms(
+					entries.reduce((sum, _, index) => {
+						if (index === 0) {
+							return sum
+						}
+						return (
+							sum + (entries[index].createdAt - entries[index - 1].createdAt)
+						)
+					}, 0) /
+						(entries.length - 1),
+			  )
+			: 'unknown'
 
 	const chartOptions = useMemo(
 		() => ({
@@ -133,7 +139,7 @@ export function ServiceChart({ entries }) {
 					</span>
 					<span className="mx-2">&bull;</span>
 					<span className="text-primary mr-2">Interval:</span>
-					<span>{ms(interval)}</span>
+					<span>{interval}</span>
 				</p>
 			</div>
 		</React.Fragment>
