@@ -191,7 +191,10 @@ async function updateServiceCheck(serviceCheck) {
 				].join('\n')
 			}
 
-			if (prevEntry && updatedCheckEntry.serviceStatus === prevEntry.serviceStatus) {
+			if (
+				prevEntry &&
+				updatedCheckEntry.serviceStatus === prevEntry.serviceStatus
+			) {
 				await model('Checks').update(
 					{
 						service: serviceCheck.service,
@@ -207,7 +210,10 @@ async function updateServiceCheck(serviceCheck) {
 						upsert: true,
 					},
 				)
-			} else if (!prevEntry || updatedCheckEntry.serviceStatus !== prevEntry.serviceStatus) {
+			} else if (
+				!prevEntry ||
+				updatedCheckEntry.serviceStatus !== prevEntry.serviceStatus
+			) {
 				await model('Checks').update(
 					{
 						service: serviceCheck.service,
