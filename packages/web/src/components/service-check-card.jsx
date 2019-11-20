@@ -46,9 +46,10 @@ export function ServiceCheckCard({ service, check: firstCheck }) {
 	const numDimBars = historyState.result
 		? numHistoryBars - historyState.result.length
 		: 0
-	const latestCheck = historyState.result
-		? historyState.result[historyState.result.length - 1]
-		: firstCheck
+	const latestCheck =
+		(historyState.result &&
+			historyState.result[historyState.result.length - 1]) ||
+		firstCheck
 
 	let [selectedCheck, setSelectedCheck] = useState()
 	if (!selectedCheck && latestCheck && latestCheck.status === 'unhealthy') {
