@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs'
+import * as zlib from 'zlib'
 import * as path from 'path'
 import * as http from 'http'
 
@@ -16,6 +17,7 @@ const NO_RESPONSE = Symbol('NO_RESPONSE')
 
 // For SSR
 async function render(serviceChecksMap) {
+	// Render <App /> as static markup
 	process.env.IS_SERVER = 'true'
 	const DEFAULT_STATE = {
 		checks: {
@@ -36,18 +38,39 @@ async function render(serviceChecksMap) {
 	const $ = cheerio.load(html)
 	$('#app').html(app.HTML)
 
+	// Inline css
+	const stylesheets = $('link[rel="stylesheet"]')
+	for (let i = 0; i < stylesheets.length; ++i) {
+		const cssFile =
+			path.resolve(__dirname, '..', 'web', 'dist') +
+			$(stylesheets[i]).attr('href')
+		const css = await fs.readFile(cssFile)
+		$(stylesheets[i]).replaceWith(`<style>${css}</style>`)
+	}
+
+	// Render redux initial state
 	const files = await fs.readdir(path.resolve(__dirname, '..', 'web', 'dist'))
 	const ssrFile = files.find(f => f.startsWith('ssr') && f.endsWith('.js'))
 	if (!ssrFile) {
 		throw new Error(`Failed to find ssr.js in ../web/dist`)
 	}
-
 	await fs.writeFile(
 		path.resolve(__dirname, '..', 'web', 'dist', ssrFile),
 		`window.DEFAULT_STATE = ${JSON.stringify(DEFAULT_STATE)}`,
 	)
 
-	return $.html()
+	const staticHTML = $.html()
+	const brotliHTML = await new Promise((resolve, reject) => {
+		zlib.brotliCompress(staticHTML, (err, result) => {
+			if (err) reject(err)
+			else resolve(result)
+		})
+	})
+
+	return {
+		raw: staticHTML,
+		brotliHTML,
+	}
 }
 
 function route(fn) {
@@ -150,7 +173,12 @@ export function createApp(config) {
 	app.set('etag', false)
 	app.get('/', async (req, res, next) => {
 		if ((req.path === '/' || req.path === '/index.html') && staticHTML) {
-			res.end(staticHTML)
+			if (req.acceptsEncodings('br')) {
+				res.set('Content-Encoding', 'br')
+				res.end(staticHTML.brotliHTML)
+			} else {
+				res.end(staticHTML.raw)
+			}
 			return
 		}
 
