@@ -9,7 +9,8 @@ import { useEffect, useState } from 'react'
 import { Checks, CheckType } from '../models/checks'
 import { ServiceChart } from './service-chart'
 
-const numHistoryBars = screen.availWidth > 767 ? 80 : 40
+const numHistoryBars =
+	!process.env.IS_SERVER && screen.availWidth > 767 ? 80 : 40
 const barWidth = 2
 const barSpacing = 2
 const svgWidth = numHistoryBars * barWidth + (numHistoryBars - 1) * barSpacing

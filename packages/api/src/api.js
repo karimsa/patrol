@@ -1,15 +1,54 @@
+import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as http from 'http'
 
+import cheerio from 'cheerio'
 import express from 'express'
 import morgan from 'morgan'
 import cors from 'cors'
 import initSocketIO from 'socket.io'
 import { logger } from '@karimsa/boa'
+import compression from 'compression'
 
 import { model } from './db'
 
 const NO_RESPONSE = Symbol('NO_RESPONSE')
+
+// For SSR
+async function render(serviceChecksMap) {
+	process.env.IS_SERVER = 'true'
+	const DEFAULT_STATE = {
+		checks: {
+			status: 'success',
+			result: serviceChecksMap,
+		},
+		checkHistory: {},
+	}
+	global.window = {
+		DEFAULT_STATE,
+	}
+	const app = require('../web/dist/server')
+	global.window = null
+	const html = await fs.readFile(
+		path.resolve(__dirname, '..', 'web', 'dist', 'index.html'),
+		'utf8',
+	)
+	const $ = cheerio.load(html)
+	$('#app').html(app.HTML)
+
+	const files = await fs.readdir(path.resolve(__dirname, '..', 'web', 'dist'))
+	const ssrFile = files.find(f => f.startsWith('ssr') && f.endsWith('.js'))
+	if (!ssrFile) {
+		throw new Error(`Failed to find ssr.js in ../web/dist`)
+	}
+
+	await fs.writeFile(
+		path.resolve(__dirname, '..', 'web', 'dist', ssrFile),
+		`window.DEFAULT_STATE = ${JSON.stringify(DEFAULT_STATE)}`,
+	)
+
+	return $.html()
+}
 
 function route(fn) {
 	return function(req, res) {
@@ -71,6 +110,14 @@ function getStatusChecks(checkList) {
 	)
 }
 
+async function getServiceMap(checkList) {
+	return (await getStatusChecks(checkList)).reduce((groups, check) => {
+		groups[check.service] = groups[check.service] || []
+		groups[check.service].push(check)
+		return groups
+	}, {})
+}
+
 export const io = {
 	listeners: [],
 	emit(event, data) {
@@ -85,6 +132,8 @@ export function createApp(config) {
 	const server = http.createServer(app)
 	const socketServer = initSocketIO(server)
 
+	let staticHTML
+
 	socketServer.on('connection', sock => {
 		logger.info(`Socket connected`)
 		sock.on('close', () => {
@@ -97,7 +146,16 @@ export function createApp(config) {
 		socketServer.emit(event, data)
 	})
 
+	app.use(compression())
 	app.set('etag', false)
+	app.get('/', async (req, res, next) => {
+		if ((req.path === '/' || req.path === '/index.html') && staticHTML) {
+			res.end(staticHTML)
+			return
+		}
+
+		next()
+	})
 	app.use(express.static(path.resolve(__dirname, '..', 'web', 'dist')))
 	app.use(morgan('dev'))
 
@@ -122,6 +180,16 @@ export function createApp(config) {
 			}
 		}
 	}
+
+	getServiceMap(checkList)
+		.then(serviceMap => render(serviceMap))
+		.then(html => {
+			logger.info(`Rendered static markup`)
+			staticHTML = html
+		})
+		.catch(error => {
+			logger.error(`Failed to render static HTML`, error)
+		})
 
 	app.get(
 		'/badge',
@@ -199,16 +267,7 @@ export function createApp(config) {
 		}),
 	)
 
-	app.get(
-		'/api/checks',
-		route(async () =>
-			(await getStatusChecks(checkList)).reduce((groups, check) => {
-				groups[check.service] = groups[check.service] || []
-				groups[check.service].push(check)
-				return groups
-			}, {}),
-		),
-	)
+	app.get('/api/checks', route(async () => getServiceMap(checkList)))
 
 	return {
 		app,

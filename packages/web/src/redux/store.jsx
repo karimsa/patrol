@@ -5,32 +5,21 @@ import { useSelector } from 'react-redux'
 import get from 'lodash/get'
 import { createStore } from 'redux'
 
-const idleState = result => ({
-	status: 'idle',
-	result,
-})
-const inprogressState = result => ({
-	status: 'inprogress',
-	result,
-})
-const successState = result => ({
-	status: 'success',
-	result,
-})
-const errorState = (error, result) => ({
-	status: 'error',
-	error,
-	result,
-})
+import { idleState, successState, errorState, inprogressState } from './utils'
 
-const defaultState = {
-	checks: idleState(),
-	checkHistory: {},
-}
+const defaultState = window.DEFAULT_STATE
 
 function selectOverallHistory(state) {
 	return state.checkHistory
 }
+
+const global = (function() {
+	try {
+		return window
+	} catch (_) {
+		return process
+	}
+})()
 
 export function useOverallStatus() {
 	const checkHistory = useSelector(selectOverallHistory)
@@ -143,8 +132,9 @@ export const store = createStore(
 				return state
 		}
 	},
-	window.__REDUX_DEVTOOLS_EXTENSION__ &&
-		window.__REDUX_DEVTOOLS_EXTENSION__({
+	global.window &&
+		global.window.__REDUX_DEVTOOLS_EXTENSION__ &&
+		global.window.__REDUX_DEVTOOLS_EXTENSION__({
 			trace: true,
 		}),
 )
