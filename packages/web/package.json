@@ -3,8 +3,8 @@
 	"scripts": {
 		"format": "npm run pretest -- --fix",
 		"pretest": "eslint --cache src/**/*.jsx",
-		"start": "parcel serve --port 1234 src/index.html",
-		"build": "NODE_ENV=production parcel build src/index.html"
+		"start": "concurrently -k 'parcel serve src/index.html' 'parcel serve src/server.jsx'",
+		"build": "NODE_ENV=production parcel build src/index.html && NODE_ENV=production IS_SERVER=true parcel build src/server.jsx --target=node"
 	},
 	"devDependencies": {
 		"parcel": "^1.12.3",
