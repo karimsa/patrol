@@ -96,6 +96,11 @@ export function ServiceCheckCard({ service, check: firstCheck }) {
 								</span>
 							</p>
 						</div>
+						<div className="d-sm-none">
+							<span className="small text-muted d-block text-right">
+								{moment(latestCheck.createdAt).fromNow()}
+							</span>
+						</div>
 					</div>
 				</div>
 
