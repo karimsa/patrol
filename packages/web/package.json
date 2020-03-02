@@ -7,6 +7,7 @@
 		"build": "NODE_ENV=production parcel build src/index.html && NODE_ENV=production IS_SERVER=true parcel build src/server.jsx --target=node --bundle-node-modules"
 	},
 	"devDependencies": {
+		"concurrently": "^5.1.0",
 		"eslint-plugin-react": "^7.18.3",
 		"parcel": "^1.12.3",
 		"sass": "^1.22.12"
