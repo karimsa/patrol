@@ -295,7 +295,10 @@ export function createApp(config) {
 		}),
 	)
 
-	app.get('/api/checks', route(async () => getServiceMap(checkList)))
+	app.get(
+		'/api/checks',
+		route(async () => getServiceMap(checkList)),
+	)
 
 	return {
 		app,
