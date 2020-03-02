@@ -43,9 +43,12 @@ async function sweepServiceHistory(service, check, maxHistorySize) {
 			},
 		)
 		for (let i = 0; i < itemsToDelete.length; i++) {
-			process.stdout.write(
-				`\rDeleting item ${i + 1} of ${numDelete} for ${service}.${check}`,
-			)
+			if (process.stdout.isTTY && logger.isDebugEnabled('patrol')) {
+				process.stdout.write(
+					`\rDeleting item ${i + 1} of ${numDelete} for ${service}.${check}`,
+				)
+			}
+
 			await model('Checks').remove(itemsToDelete[i])
 		}
 	} else {
@@ -228,12 +231,21 @@ async function updateServiceCheck(serviceCheck) {
 			}
 		}
 
-		logger.info(`Updated service check: %O`, {
-			service: serviceCheck.service,
-			check: serviceCheck.check.name,
-			serviceStatus,
-			updatedCheckEntry,
-		})
+		logger.info(
+			`Updated service check: %O`,
+			logger.isDebugEnabled('patrol')
+				? {
+						service: serviceCheck.service,
+						check: serviceCheck.check.name,
+						serviceStatus,
+						updatedCheckEntry,
+				  }
+				: {
+						service: serviceCheck.service,
+						check: serviceCheck.check.name,
+						serviceStatus,
+				  },
+		)
 
 		io.emit('historyUpdate', {
 			service: serviceCheck.service,
