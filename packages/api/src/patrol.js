@@ -154,6 +154,29 @@ async function main() {
 				} else if (check.historySize == null) {
 					check.historySize = 80
 				}
+
+				if (check.retryStrategy == null) {
+					check.retryStrategy = 'constantBackoff'
+				}
+				if (
+					!['constantBackoff', 'linearBackoff', 'exponentialBackoff'].includes(
+						check.retryStrategy,
+					)
+				) {
+					throw new Error(
+						`Unknown retry strategy: ${check.retryStrategy} (must be one of: constantBackoff, linearBackoff, or exponentialBackoff)`,
+					)
+				}
+
+				if (check.maxRetries == null) {
+					check.maxRetries = 5
+				}
+				if (typeof check.maxRetries !== 'number') {
+					throw new Error(
+						`Invalid number of maximum retries: ${check.maxRetries} (expected number)`,
+					)
+				}
+
 				if (Array.isArray(check.cmd)) {
 					check.cmd = check.cmd.join('; ')
 				}

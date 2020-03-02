@@ -17,6 +17,7 @@
     "ms": "^2.1.2",
     "mustache": "^3.1.0",
     "nedb": "^1.8.0",
+    "net-ping": "^1.2.3",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.7",
     "socket.io": "^2.3.0",

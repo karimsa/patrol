@@ -1,6 +1,7 @@
 import { logger } from '@karimsa/boa'
 import Docker from 'dockerode'
 import ms from 'ms'
+import * as NetPing from 'net-ping'
 
 import { model } from './db'
 import * as queue from './queue'
@@ -8,6 +9,25 @@ import { sendNotifications } from './notifiers'
 import { io } from './api'
 
 const docker = new Docker()
+const pingSession = NetPing.createSession()
+const sleep = time => new Promise(resolve => setTimeout(resolve, time))
+
+const RETRY_STRATEGIES = {
+	constantBackoff: () => 5e3,
+	linearBackoff: attempt => attempt * 5e3,
+	exponentialBackoff: attempt => 5e3 ** attempt,
+}
+
+function ping(target) {
+	return new Promise((resolve, reject) => {
+		pingSession.pingHost(target, (err, results) => {
+			console.log({ err, results })
+
+			if (err) reject(err)
+			else resolve()
+		})
+	})
+}
 
 async function dockerImageExists(image) {
 	for (const { RepoTags } of await docker.listImages()) {
@@ -80,64 +100,102 @@ async function updateServiceCheck(serviceCheck) {
 			await docker.pull(serviceCheck.check.image)
 		}
 
-		const startedAt = Date.now()
-		const container = await docker.createContainer({
-			name,
-			Image: serviceCheck.check.image,
-			AttachStdin: false,
-			AttachStdout: true,
-			AttachStderr: true,
-			Tty: false,
-			Entrypoint: ['/bin/sh', '-e', '-c'],
-			Cmd: [serviceCheck.check.cmd],
-			OpenStdin: false,
-			StdinOnce: false,
-			AutoRemove: true,
-		})
-
-		let stdout = ''
-		let stderr = ''
-
-		const stdoutStream = await container.attach({
-			stream: true,
-			stdout: true,
-			stderr: false,
-		})
-		stdoutStream.on('data', chunk => {
-			stdout += chunk
-				.toString('utf8')
-				.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, '')
-		})
-
-		const stderrStream = await container.attach({
-			stream: true,
-			stdout: false,
-			stderr: true,
-		})
-		stderrStream.on('data', chunk => {
-			stderr += chunk
-				.toString('utf8')
-				.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, '')
-		})
-
-		await container.start()
-
-		let serviceStatus = 'healthy'
+		let serviceStatus = 'unhealthy'
 		let serviceError
 		let serviceExitCode
-		try {
-			const { Error: error, StatusCode } = await container.wait()
-			if (error) {
-				throw new Error(error)
+		let stdout = ''
+		let stderr = ''
+		const startedAt = Date.now()
+
+		const retryFn = RETRY_STRATEGIES[serviceCheck.check.retryStrategy]
+		if (!retryFn) {
+			throw new Error(`Unknown retry strategy: ${serviceCheck.retryStrategy}`)
+		}
+		const { maxRetries } = serviceCheck.check
+		if (typeof maxRetries !== 'number' || maxRetries < 1) {
+			throw new Error(
+				`Invalid number of retries: ${maxRetries} (must be greater than 1)`,
+			)
+		}
+
+		for (let attempt = 0; attempt < maxRetries; attempt++) {
+			if (attempt > 0) {
+				logger.debug(
+					'patrol',
+					`Retrying service check for ${serviceCheck.service}/${serviceCheck.check.name}`,
+				)
+
+				await sleep(retryFn(attempt))
 			}
 
-			serviceExitCode = StatusCode
-			if (serviceExitCode !== 0) {
-				throw new Error(`Check exited with status: ${serviceExitCode}`)
+			// Make sure that the network is working
+			while (true) {
+				try {
+					await ping('8.8.8.8')
+					break
+				} catch (error) {
+					logger.error(`Ping to 8.8.8.8 is failing, retrying - ${error}`)
+				}
 			}
-		} catch (error) {
-			serviceStatus = 'unhealthy'
-			serviceError = String(error.stack || error)
+
+			const container = await docker.createContainer({
+				name,
+				Image: serviceCheck.check.image,
+				AttachStdin: false,
+				AttachStdout: true,
+				AttachStderr: true,
+				Tty: false,
+				Entrypoint: ['/bin/sh', '-e', '-c'],
+				Cmd: [serviceCheck.check.cmd],
+				OpenStdin: false,
+				StdinOnce: false,
+				AutoRemove: true,
+			})
+
+			stdout = ''
+			stderr = ''
+
+			const stdoutStream = await container.attach({
+				stream: true,
+				stdout: true,
+				stderr: false,
+			})
+			stdoutStream.on('data', chunk => {
+				stdout += chunk
+					.toString('utf8')
+					.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, '')
+			})
+
+			const stderrStream = await container.attach({
+				stream: true,
+				stdout: false,
+				stderr: true,
+			})
+			stderrStream.on('data', chunk => {
+				stderr += chunk
+					.toString('utf8')
+					.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, '')
+			})
+
+			await container.start()
+
+			try {
+				const { Error: error, StatusCode } = await container.wait()
+				if (error) {
+					throw new Error(error)
+				}
+
+				serviceExitCode = StatusCode
+				if (serviceExitCode !== 0) {
+					throw new Error(`Check exited with status: ${serviceExitCode}`)
+				}
+
+				serviceStatus = 'healthy'
+				break
+			} catch (error) {
+				serviceStatus = 'unhealthy'
+				serviceError = String(error.stack || error)
+			}
 		}
 
 		const updatedCheckEntry = {
