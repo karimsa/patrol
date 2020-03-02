@@ -21,8 +21,6 @@ const RETRY_STRATEGIES = {
 function ping(target) {
 	return new Promise((resolve, reject) => {
 		pingSession.pingHost(target, (err, results) => {
-			console.log({ err, results })
-
 			if (err) reject(err)
 			else resolve()
 		})
