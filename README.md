@@ -10,6 +10,7 @@
   </a>
 </p>
 
+ - [TLDR](#tldr)
  - [Usage](#usage)
  - [Docker tags](#docker-tags)
  - [Creating a service](#creating-a-service)
@@ -18,6 +19,26 @@
 	- [Health check options](#health-check-options)
  - [Badges](#badges)
  - [License](#license)
+
+## TL;DR
+
+  1. Create a config file like [this one](https://github.com/karimsa/patrol/tree/master/example.yml).
+  2. Place your config file in the current directory and name it `patrol.yml`.
+  3. Run this in your shell:
+
+```shell
+$ docker run \
+		-d \
+		--name patrol \
+		--restart=on-failure \
+		-v "$PWD:/config" \
+		-v /var/run/docker.sock:/var/run/docker.sock:ro \
+		-p 80:8080 \
+		--log-driver json-file \
+		--log-opt max-size=100m \
+		karimsa/patrol:latest \
+			--config /config/patrol.yml
+```
 
 ## Usage
 
@@ -33,25 +54,21 @@ You can then run `patrol` via docker:
 $ ls
 patrol.yml
 $ docker run \
-        -d \
-        --name patrol \
-        --restart=on-failure \
-        -v "$PWD:/config" \
-        -v /var/run/docker.sock:/var/run/docker.sock:ro \
-        -p 80:8080 \
-        --log-driver json-file \
-        --log-opt max-size=100m \
-        karimsa/patrol:latest \
-        	--config /config/hirefast.yml
+		-d \
+		--name patrol \
+		--restart=on-failure \
+		-v "$PWD:/config" \
+		-v /var/run/docker.sock:/var/run/docker.sock:ro \
+		-p 80:8080 \
+		--log-driver json-file \
+		--log-opt max-size=100m \
+		karimsa/patrol:latest \
+			--config /config/patrol.yml
 ```
 
 This will start patrol on port `80` with the web interface. It will also give patrol access to your host machine's docker daemon so that it can spin up additional containers to run checks.
 
 *Note: limiting the maximum log size for patrol is crucial, since patrol logs every time checks are run.*
-
-## TL;DR
-
-Checkout [example.yml](https://github.com/karimsa/patrol/tree/master/example.yml).
 
 ## Docker tags
 
