@@ -33,16 +33,21 @@ You can then run `patrol` via docker:
 $ ls
 patrol.yml
 $ docker run \
-	-v "$PWD:/config" \
-	-v /var/run/docker.sock:/var/run/docker.sock \
-	-p 80:8080 \
-	karimsa/patrol:latest \
-	--config /config/patrol.yml
+        -d \
+        --name patrol \
+        --restart=on-failure \
+        -v "$PWD:/config" \
+        -v /var/run/docker.sock:/var/run/docker.sock:ro \
+        -p 80:8080 \
+        --log-driver json-file \
+        --log-opt max-size=100m \
+        karimsa/patrol:latest \
+        	--config /config/hirefast.yml
 ```
 
-This will start patrol on ports `80` and `8080`, where `80` will host the web interface and `8080` will host
-the API server. It will also give patrol access to your host machine's docker daemon so that it can spin up
-additional containers.
+This will start patrol on port `80` with the web interface. It will also give patrol access to your host machine's docker daemon so that it can spin up additional containers to run checks.
+
+*Note: limiting the maximum log size for patrol is crucial, since patrol logs every time checks are run.*
 
 ## Docker tags
 
