@@ -1,8 +1,8 @@
-<h1 align="center">
-  <img src=".github/logo.png" alt="Patrol" />
-</h1>
+<p align="center">
+  <img src=".github/preview.png" alt="Preview image" />
+</p>
 
-<p align="center">Host your own status pages.</p>
+<p align="center">Host your own uptime monitoring status pages.</p>
 
 <p align="center">
   <a href="https://circleci.com/gh/karimsa/patrol">
@@ -48,6 +48,10 @@ $ docker run \
 This will start patrol on port `80` with the web interface. It will also give patrol access to your host machine's docker daemon so that it can spin up additional containers to run checks.
 
 *Note: limiting the maximum log size for patrol is crucial, since patrol logs every time checks are run.*
+
+## TL;DR
+
+Checkout [example.yml](https://github.com/karimsa/patrol/tree/master/example.yml).
 
 ## Docker tags
 
