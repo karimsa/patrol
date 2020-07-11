@@ -1,3 +1,4 @@
 node_modules
-*.dist.js
-dist
+packages/api/node_modules
+packages/web/node_modules
+packages/web/.cache
