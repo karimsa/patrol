@@ -33,10 +33,12 @@ export function useOverallStatus() {
 			}
 
 			const lastResult = history.result[history.result.length - 1]
-			if (lastResult.serviceStatus === 'unhealthy') {
-				numUnhealthySystems += 1
+			if (lastResult) {
+				if (lastResult.serviceStatus === 'unhealthy') {
+					numUnhealthySystems += 1
+				}
+				lastUpdated = Math.max(lastUpdated, lastResult.createdAt)
 			}
-			lastUpdated = Math.max(lastUpdated, lastResult.createdAt)
 		}
 
 		return successState({
