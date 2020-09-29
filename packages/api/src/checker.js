@@ -29,6 +29,7 @@ function ping(target) {
 
 async function dockerImageExists(image) {
 	for (const { RepoTags } of await docker.listImages()) {
+		logger.debug(`Found image with tags: %O`, RepoTags)
 		if (RepoTags && RepoTags.includes(image)) {
 			return true
 		}
@@ -95,7 +96,10 @@ async function updateServiceCheck(serviceCheck) {
 
 		// verify that the image exists
 		if (!(await dockerImageExists(serviceCheck.check.image))) {
+			logger.info(`Pulling image ${serviceCheck.check.image}`)
 			await docker.pull(serviceCheck.check.image)
+		} else {
+			logger.info(`Skipping image pull for: ${serviceCheck.check.image} (already exists)`)
 		}
 
 		let serviceStatus = 'unhealthy'
