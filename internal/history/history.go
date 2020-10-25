@@ -19,6 +19,7 @@ type Item struct {
 	Type       string
 	Output     []byte
 	CreatedAt  time.Time
+	Duration   time.Duration
 	Metric     int64
 	MetricUnit string
 	Status     string

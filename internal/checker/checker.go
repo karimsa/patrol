@@ -23,8 +23,11 @@ type Checker struct {
 	MetricUnit string
 	Interval   time.Duration
 	CmdTimeout time.Duration
+	History    *history.File
 
-	logger *log.Logger
+	logger   *log.Logger
+	doneChan chan bool
+	wg       *sync.WaitGroup
 }
 
 func New(c *Checker) *Checker {
@@ -36,10 +39,12 @@ func New(c *Checker) *Checker {
 	if c.CmdTimeout.Milliseconds() == 0 {
 		c.CmdTimeout = 1 * time.Minute
 	}
+	c.doneChan = make(chan bool)
+	c.wg = &sync.WaitGroup{}
 	return c
 }
 
-func (c *Checker) Check() *history.Item {
+func (c *Checker) Check() history.Item {
 	c.logger.Printf("Checking status")
 
 	stdout := bytes.Buffer{}
@@ -60,15 +65,17 @@ func (c *Checker) Check() *history.Item {
 	cmd.Stdout = io.MultiWriter(&stdout, &combinedOutput)
 	cmd.Stderr = io.MultiWriter(&stderr, &combinedOutput)
 
+	cmdStart := time.Now()
 	err := cmd.Run()
 	cancel()
 
-	item := &history.Item{
+	item := history.Item{
 		Group:      c.Group,
 		Name:       c.Name,
 		Type:       c.Type,
 		Output:     combinedOutput.Bytes(),
 		CreatedAt:  time.Now(),
+		Duration:   time.Since(cmdStart),
 		Metric:     0,
 		MetricUnit: c.MetricUnit,
 		Status:     "",
@@ -98,14 +105,25 @@ func (c *Checker) Check() *history.Item {
 	return item
 }
 
-func (c *Checker) Run(wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
+func (c *Checker) Run() {
+	c.wg.Add(1)
+	defer c.wg.Done()
 
 	for {
-		_ = c.Check()
-		// aahhh
+		item := c.Check()
+		if err := c.History.Append(item); err != nil {
+			panic(err)
+		}
 
-		<-time.After(c.Interval)
+		select {
+		case <-time.After(c.Interval):
+		case <-c.doneChan:
+			return
+		}
 	}
+}
+
+func (c *Checker) Close() {
+	c.doneChan <- true
+	c.wg.Wait()
 }
