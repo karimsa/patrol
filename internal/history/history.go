@@ -1,23 +1,43 @@
 package history
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"sort"
+	"strings"
 	"sync"
 	"time"
-	"sort"
-	"bufio"
 )
 
 type Item struct {
-	Group     string
-	Name      string
-	Type      string
-	Output    []byte
-	CreatedAt time.Time
+	Group      string
+	Name       string
+	Type       string
+	Output     []byte
+	CreatedAt  time.Time
+	Metric     int64
+	MetricUnit string
+	Status     string
+	Error      string
+}
+
+func (item Item) String() string {
+	return strings.Join([]string{
+		fmt.Sprintf("Item{"),
+		fmt.Sprintf("\tGroup: %s,", item.Group),
+		fmt.Sprintf("\tName: %s,", item.Name),
+		fmt.Sprintf("\tType: %s,", item.Type),
+		fmt.Sprintf("\tOutput: '%s',", strings.Join(strings.Split(string(item.Output), "\n"), "\\n")),
+		fmt.Sprintf("\tCreatedAt: %s,", item.CreatedAt),
+		fmt.Sprintf("\tMetric: %d%s,", item.Metric, item.MetricUnit),
+		fmt.Sprintf("\tStatus: %s,", item.Status),
+		fmt.Sprintf("\tError: '%s',", item.Error),
+		fmt.Sprintf("}"),
+	}, "\n")
 }
 
 func (item Item) writeTo(buffer *bytes.Buffer) error {
@@ -131,9 +151,10 @@ func (file *File) bgWriter() {
 				} else if n < int64(buffer.Len()) {
 					file.rwMux.Unlock()
 					panic(fmt.Errorf("Wrote only %d bytes to file", n))
-				} else{
+				} else {
 					for _, r := range records {
-						file.addItem(r.item)					}
+						file.addItem(r.item)
+					}
 
 					file.rwMux.Unlock()
 					sendError(records, nil)
@@ -148,15 +169,15 @@ func (file *File) bgWriter() {
 
 func (file *File) addItem(item Item) {
 	if _, ok := file.data[item.Group]; !ok {
-							file.data[item.Group] = make([]Item, 0, 1)
-						}
+		file.data[item.Group] = make([]Item, 0, 1)
+	}
 
-						lst := append(file.data[item.Group], item)
-						file.data[item.Group] = lst
+	lst := append(file.data[item.Group], item)
+	file.data[item.Group] = lst
 
-						sort.SliceStable(file.data[item.Group], func(i, j int) bool {
-							return lst[j].CreatedAt.Before(lst[i].CreatedAt)
-						})
+	sort.SliceStable(file.data[item.Group], func(i, j int) bool {
+		return lst[j].CreatedAt.Before(lst[i].CreatedAt)
+	})
 }
 
 func (file *File) Append(item Item) error {

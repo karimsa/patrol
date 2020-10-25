@@ -2,10 +2,10 @@ package history
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 	"time"
-	"os"
 )
 
 func TestAOF(t *testing.T) {
