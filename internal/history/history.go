@@ -195,9 +195,9 @@ func (file *File) addItem(item Item) {
 	container := file.data[item.Group]
 
 	if item.Type == "boolean" {
-		item.id = fmt.Sprintf("%d", item.CreatedAt.UTC().UnixNano()/int64(24*time.Hour))
+		item.id = fmt.Sprintf("%s\000%s\000%d", item.Group, item.Name, item.CreatedAt.UTC().UnixNano()/int64(24*time.Hour))
 	} else {
-		item.id = fmt.Sprintf("%d", item.CreatedAt.UTC().UnixNano())
+		item.id = fmt.Sprintf("%s\000%s\000%d", item.Group, item.Name, item.CreatedAt.UTC().UnixNano())
 	}
 
 	node, exists := container.byID[item.id]
