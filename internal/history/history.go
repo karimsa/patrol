@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 )
 
 type Item struct {
+	id         string
 	Group      string
 	Name       string
 	Type       string
@@ -64,13 +65,26 @@ type writeRequest struct {
 	errChan chan error
 }
 
+type listNode struct {
+	value Item
+	next  *listNode
+}
+
+type dataContainer struct {
+	byID map[string]*listNode
+	head *listNode
+	tail *listNode
+}
+
 type File struct {
-	fd       *os.File
-	writes   chan writeRequest
-	writerWg *sync.WaitGroup
-	done     chan bool
-	data     map[string][]Item
-	rwMux    *sync.RWMutex
+	fd         *os.File
+	writes     chan writeRequest
+	writerWg   *sync.WaitGroup
+	done       chan bool
+	data       map[string]*dataContainer
+	rwMux      *sync.RWMutex
+	maxEntries int
+	logger     *log.Logger
 }
 
 type NewOptions struct {
@@ -90,15 +104,16 @@ func New(options NewOptions) (*File, error) {
 	}
 
 	file := &File{
-		fd:       fd,
-		writes:   make(chan writeRequest, options.MaxConcurrentWrites),
-		writerWg: &sync.WaitGroup{},
-		done:     make(chan bool),
-		data:     make(map[string][]Item),
-		rwMux:    &sync.RWMutex{},
+		fd:         fd,
+		writes:     make(chan writeRequest, options.MaxConcurrentWrites),
+		writerWg:   &sync.WaitGroup{},
+		done:       make(chan bool),
+		data:       map[string]*dataContainer{},
+		rwMux:      &sync.RWMutex{},
+		maxEntries: options.MaxEntries,
+		logger:     log.New(os.Stdout, "history: ", log.LstdFlags|log.Lmsgprefix),
 	}
 
-	// TODO: Read log file
 	bufferedReader := bufio.NewReader(fd)
 	var item Item
 	var line []byte
@@ -153,6 +168,7 @@ func (file *File) bgWriter() {
 					file.rwMux.Unlock()
 					panic(fmt.Errorf("Wrote only %d bytes to file", n))
 				} else {
+					file.logger.Printf("Writing %d records", len(records))
 					for _, r := range records {
 						file.addItem(r.item)
 					}
@@ -163,6 +179,7 @@ func (file *File) bgWriter() {
 			}
 
 		case <-file.done:
+			file.logger.Printf("Closing history file")
 			return
 		}
 	}
@@ -170,15 +187,56 @@ func (file *File) bgWriter() {
 
 func (file *File) addItem(item Item) {
 	if _, ok := file.data[item.Group]; !ok {
-		file.data[item.Group] = make([]Item, 0, 1)
+		file.data[item.Group] = &dataContainer{
+			byID: make(map[string]*listNode, 100),
+			head: nil,
+		}
+	}
+	container := file.data[item.Group]
+
+	if item.Type == "boolean" {
+		item.id = fmt.Sprintf("%d", item.CreatedAt.UTC().UnixNano()/int64(24*time.Hour))
+	} else {
+		item.id = fmt.Sprintf("%d", item.CreatedAt.UTC().UnixNano())
 	}
 
-	lst := append(file.data[item.Group], item)
-	file.data[item.Group] = lst
+	node, exists := container.byID[item.id]
+	if !exists {
+		node = &listNode{}
+		container.byID[item.id] = node
+	}
+	node.value = item
 
-	sort.SliceStable(file.data[item.Group], func(i, j int) bool {
-		return lst[j].CreatedAt.Before(lst[i].CreatedAt)
-	})
+	if item.Type == "metric" || !exists {
+		file.logger.Printf("Inserting: %s", item)
+		if container.head == nil {
+			container.head = node
+			container.tail = node
+		} else {
+			inserted := false
+			var prev *listNode
+
+			for curr := container.head; curr != nil && !inserted; prev, curr = curr, curr.next {
+				if !node.value.CreatedAt.Before(curr.value.CreatedAt) {
+					if prev == nil {
+						node.next = container.head
+						container.head = node
+					} else {
+						node.next = prev.next
+						prev.next = node
+					}
+					inserted = true
+				}
+			}
+
+			if !inserted {
+				container.tail.next = node
+				container.tail = node
+			}
+		}
+	} else {
+		file.logger.Printf("Replacing: %s", item)
+	}
 }
 
 func (file *File) Append(item Item) error {
@@ -206,16 +264,18 @@ func (file *File) GetGroups() []string {
 
 func (file *File) GetGroupItems(group string) []Item {
 	file.rwMux.RLock()
-	items, groupExists := file.data[group]
+	container, _ := file.data[group]
 	file.rwMux.RUnlock()
 
-	if groupExists {
-		return items
+	list := make([]Item, 0, len(container.byID))
+	for curr := container.head; curr != nil; curr = curr.next {
+		list = append(list, curr.value)
 	}
-	return []Item{}
+	return list
 }
 
 func (file *File) Close() {
 	file.done <- true
+	// close(file.done)
 	file.writerWg.Wait()
 }

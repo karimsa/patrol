@@ -34,7 +34,7 @@ func New(c *Checker) *Checker {
 	c.logger = log.New(
 		os.Stdout,
 		fmt.Sprintf("%s:%s: ", c.Group, c.Name),
-		log.LstdFlags,
+		log.LstdFlags|log.Lmsgprefix,
 	)
 	if c.CmdTimeout.Milliseconds() == 0 {
 		c.CmdTimeout = 1 * time.Minute
