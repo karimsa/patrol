@@ -3,14 +3,14 @@ package history
 import (
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 	"time"
 )
 
-func TestDoubleOpen(t *testing.T) {
+func TestMultiOpen(t *testing.T) {
 	os.Remove("./history-test.db")
 
+	// 1st open/create
 	history, err := New(
 		NewOptions{
 			File:                "./history-test.db",
@@ -23,41 +23,45 @@ func TestDoubleOpen(t *testing.T) {
 		return
 	}
 
-	wg := &sync.WaitGroup{}
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func(i int, n time.Time) {
-			defer wg.Done()
-			if err := history.Append(Item{
-				Group:     "staging",
-				Name:      "Website is up",
-				Type:      "metric",
-				Output:    []byte(fmt.Sprintf("%d-th", i)),
-				CreatedAt: n,
-			}); err != nil {
-				panic(err)
+	for i := 0; i < 100; i++ {
+		if err := history.Append(Item{
+			Group:     "staging",
+			Name:      "Website is up",
+			Type:      "metric",
+			Output:    []byte(fmt.Sprintf("%d-th", i)),
+			CreatedAt: time.Now(),
+		}); err != nil {
+			panic(err)
+		}
+		<-time.After(1 * time.Millisecond)
+	}
+
+	var runAsserts = func() {
+		items := history.GetGroupItems("staging")
+		if len(items) != 90 {
+			itemsStr := ""
+			for _, item := range items {
+				itemsStr += fmt.Sprintf("\t-> %s\n", item)
 			}
-		}(i, time.Now())
-	}
-	wg.Wait()
+			t.Error(fmt.Errorf("Failed to store/retrieve items:\n\nItems: length = %d\n\t%s\n\nHistory:\n\t%#v\n", len(items), itemsStr, history))
+			return
+		}
 
-	items := history.GetGroupItems("staging")
-	if len(items) != 10 {
-		t.Error(fmt.Errorf("Failed to store/retrieve items:\n\nItems:\n\t%#v\n\nHistory:\n\t%#v\n", items, history))
-		return
-	}
+		order := make([]string, 0, len(items))
+		for _, item := range items {
+			order = append(order, string(item.Output))
+		}
+		if fmt.Sprintf("%#v", order) != `[]string{"99-th", "98-th", "97-th", "96-th", "95-th", "94-th", "93-th", "92-th", "91-th", "90-th", "89-th", "88-th", "87-th", "86-th", "85-th", "84-th", "83-th", "82-th", "81-th", "80-th", "79-th", "78-th", "77-th", "76-th", "75-th", "74-th", "73-th", "72-th", "71-th", "70-th", "69-th", "68-th", "67-th", "66-th", "65-th", "64-th", "63-th", "62-th", "61-th", "60-th", "59-th", "58-th", "57-th", "56-th", "55-th", "54-th", "53-th", "52-th", "51-th", "50-th", "49-th", "48-th", "47-th", "46-th", "45-th", "44-th", "43-th", "42-th", "41-th", "40-th", "39-th", "38-th", "37-th", "36-th", "35-th", "34-th", "33-th", "32-th", "31-th", "30-th", "29-th", "28-th", "27-th", "26-th", "25-th", "24-th", "23-th", "22-th", "21-th", "20-th", "19-th", "18-th", "17-th", "16-th", "15-th", "14-th", "13-th", "12-th", "11-th", "10-th"}` {
+			panic(fmt.Errorf("Incorrectly ordered results:\n\n%#v\n\n%#v\n", order, items))
+		}
 
-	order := make([]string, 0, len(items))
-	for _, item := range items {
-		order = append(order, string(item.Output))
-	}
-	if fmt.Sprintf("%#v", order) != `[]string{"9-th", "8-th", "7-th", "6-th", "5-th", "4-th", "3-th", "2-th", "1-th", "0-th"}` {
-		t.Error(fmt.Errorf("Incorrectly ordered results:\n\n%#v\n\n%#v\n", order, items))
-		return
+		history.Close()
 	}
 
-	history.Close()
+	// 1st open/create
+	runAsserts()
 
+	// 2nd open
 	history, err = New(
 		NewOptions{
 			File:                "./history-test.db",
@@ -69,23 +73,21 @@ func TestDoubleOpen(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	runAsserts()
 
-	items = history.GetGroupItems("staging")
-	if len(items) != 10 {
-		t.Error(fmt.Errorf("Failed to store/retrieve items:\n\nItems:\n\t%#v\n\nHistory:\n\t%#v\n", items, history))
+	// 3rd open
+	history, err = New(
+		NewOptions{
+			File:                "./history-test.db",
+			MaxEntries:          90,
+			MaxConcurrentWrites: 100,
+		},
+	)
+	if err != nil {
+		t.Error(err)
 		return
 	}
-
-	order = make([]string, 0, len(items))
-	for _, item := range items {
-		order = append(order, string(item.Output))
-	}
-	if fmt.Sprintf("%#v", order) != `[]string{"9-th", "8-th", "7-th", "6-th", "5-th", "4-th", "3-th", "2-th", "1-th", "0-th"}` {
-		t.Error(fmt.Errorf("Incorrectly ordered results:\n\nOrder:\n\t%#v\n\n\nItems:\n\t%#v\n\nHistory:\n\t%#v\n", order, items, history))
-		return
-	}
-
-	history.Close()
+	runAsserts()
 }
 
 func TestUpserts(t *testing.T) {

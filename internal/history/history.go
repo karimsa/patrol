@@ -8,13 +8,14 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
 type Item struct {
-	id         string
+	ID         string
 	Group      string
 	Name       string
 	Type       string
@@ -42,12 +43,12 @@ func (item Item) String() string {
 	}, "\n")
 }
 
-func (item Item) writeTo(buffer *bytes.Buffer) error {
+func (item Item) writeTo(out io.Writer) error {
 	data, err := json.Marshal(item)
 	if err != nil {
 		return err
 	}
-	n, err := buffer.Write(append(data, '\n'))
+	n, err := out.Write(append(data, '\n'))
 	if n < len(data) {
 		return fmt.Errorf("Wrote partial data (error: %s)", err)
 	}
@@ -68,6 +69,11 @@ type writeRequest struct {
 type listNode struct {
 	value Item
 	next  *listNode
+	prev  *listNode
+}
+
+func (ln *listNode) String() string {
+	return ln.value.String()
 }
 
 type dataContainer struct {
@@ -113,6 +119,7 @@ func New(options NewOptions) (*File, error) {
 		maxEntries: options.MaxEntries,
 		logger:     log.New(os.Stdout, "history: ", log.LstdFlags|log.Lmsgprefix),
 	}
+	file.logger.Printf("Opened history file: %s", options.File)
 
 	bufferedReader := bufio.NewReader(fd)
 	var item Item
@@ -127,23 +134,45 @@ func New(options NewOptions) (*File, error) {
 		}
 	}
 
+	if len(file.data) > 0 {
+		// Re-initialize the AOF
+		writeBuffer := &bytes.Buffer{}
+		for _, container := range file.data {
+			for curr := container.head; curr != nil; curr = curr.next {
+				if err := curr.value.writeTo(writeBuffer); err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		if err := file.fd.Truncate(0); err != nil {
+			return nil, err
+		}
+		if _, err := file.fd.Seek(0, 0); err != nil {
+			return nil, err
+		}
+		if _, err := io.Copy(file.fd, writeBuffer); err != nil {
+			return nil, err
+		}
+		if err := file.fd.Sync(); err != nil {
+			return nil, err
+		}
+	}
+
 	numItems := 0
 	for _, group := range file.data {
 		numItems += len(group.byID)
 	}
-	if numItems == 0 {
-		file.logger.Printf("Created new history file: %s", options.File)
-	} else {
-		file.logger.Printf("Opened history file: %s", options.File)
+	if numItems > 0 {
 		file.logger.Printf("Imported %d groups and %d items from history", len(file.data), numItems)
 	}
 
+	file.writerWg.Add(1)
 	go file.bgWriter()
 	return file, nil
 }
 
 func (file *File) bgWriter() {
-	file.writerWg.Add(1)
 	defer file.writerWg.Done()
 
 	for {
@@ -153,7 +182,11 @@ func (file *File) bgWriter() {
 			records := make([]writeRequest, 1)
 			records[0] = req
 
-			buffer := bytes.NewBuffer([]byte{})
+			// TODO: Instead of panicing, it should perform a
+			// rollback on the 'data' state
+
+			buffer := &bytes.Buffer{}
+			req.item = file.addItem(req.item)
 			if err := req.item.writeTo(buffer); err != nil {
 				sendError(records, err)
 			} else {
@@ -164,7 +197,8 @@ func (file *File) bgWriter() {
 					select {
 					case r := <-file.writes:
 						records = append(records, r)
-						err = req.item.writeTo(buffer)
+						r.item = file.addItem(r.item)
+						err = r.item.writeTo(buffer)
 					default:
 						collect = false
 					}
@@ -179,13 +213,13 @@ func (file *File) bgWriter() {
 					file.rwMux.Unlock()
 					panic(fmt.Errorf("Wrote only %d bytes to file", n))
 				} else {
-					file.logger.Printf("Writing %d records", len(records))
-					for _, r := range records {
-						file.addItem(r.item)
-					}
-
+					file.logger.Printf("Wrote %d records", len(records))
 					file.rwMux.Unlock()
 					sendError(records, nil)
+				}
+
+				if err := file.fd.Sync(); err != nil {
+					file.logger.Printf("Warning: fsync failed: %s", err)
 				}
 			}
 
@@ -196,30 +230,38 @@ func (file *File) bgWriter() {
 	}
 }
 
-func (file *File) addItem(item Item) {
+func (file *File) addItem(item Item) Item {
 	if _, ok := file.data[item.Group]; !ok {
 		file.data[item.Group] = &dataContainer{
 			byID: make(map[string]*listNode, 100),
-			head: nil,
 		}
 	}
 	container := file.data[item.Group]
 
 	if item.Type == "boolean" {
-		item.id = fmt.Sprintf("%s\000%s\000%d", item.Group, item.Name, item.CreatedAt.UTC().UnixNano()/int64(24*time.Hour))
+		item.ID = fmt.Sprintf("%s|%s|%d|0", item.Group, item.Name, item.CreatedAt.UTC().UnixNano()/int64(24*time.Hour))
 	} else {
-		item.id = fmt.Sprintf("%s\000%s\000%d", item.Group, item.Name, item.CreatedAt.UTC().UnixNano())
+		n := int64(0)
+		prefix := fmt.Sprintf("%s|%s|%d|", item.Group, item.Name, item.CreatedAt.UTC().UnixNano())
+		for {
+			item.ID = prefix + strconv.FormatInt(n, 10)
+			if _, exists := container.byID[item.ID]; !exists {
+				break
+			}
+			n++
+		}
 	}
 
-	node, exists := container.byID[item.id]
+	node, exists := container.byID[item.ID]
 	if !exists {
 		node = &listNode{}
-		container.byID[item.id] = node
+		container.byID[item.ID] = node
 	}
 	node.value = item
 
 	if item.Type == "metric" || !exists {
-		file.logger.Printf("Inserting: %s", item)
+		file.logger.Printf("Inserting (size = %d): %s", len(container.byID), item)
+
 		if container.head == nil {
 			container.head = node
 			container.tail = node
@@ -231,8 +273,10 @@ func (file *File) addItem(item Item) {
 				if !node.value.CreatedAt.Before(curr.value.CreatedAt) {
 					if prev == nil {
 						node.next = container.head
+						container.head.prev = node
 						container.head = node
 					} else {
+						node.prev = prev
 						node.next = prev.next
 						prev.next = node
 					}
@@ -242,21 +286,42 @@ func (file *File) addItem(item Item) {
 
 			if !inserted {
 				container.tail.next = node
+				node.prev = container.tail
 				container.tail = node
+			}
+
+			for len(container.byID) > file.maxEntries {
+				drop := container.tail
+				file.logger.Printf("Dropping old item: %s", drop.value)
+				container.tail = drop.prev
+				if container.tail == nil {
+					container.head = nil
+				} else {
+					container.tail.next = nil
+				}
+				delete(container.byID, drop.value.ID)
 			}
 		}
 	} else {
 		file.logger.Printf("Replacing: %s", item)
 	}
+
+	return item
 }
 
 func (file *File) Append(item Item) error {
 	errChan := make(chan error)
+	fmt.Printf("adding to write queue: %s\n", item.Output)
 	file.writes <- writeRequest{
 		item:    item,
 		errChan: errChan,
 	}
 	return <-errChan
+
+	// file.rwMux.Lock()
+	// err := file.addItem(item).writeTo(file.fd)
+	// file.rwMux.Unlock()
+	// return err
 }
 
 func (file *File) GetGroups() []string {
@@ -286,7 +351,6 @@ func (file *File) GetGroupItems(group string) []Item {
 }
 
 func (file *File) Close() {
-	file.done <- true
-	// close(file.done)
+	close(file.done)
 	file.writerWg.Wait()
 }
