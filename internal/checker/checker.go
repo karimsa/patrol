@@ -39,7 +39,7 @@ func New(c *Checker) *Checker {
 	if c.CmdTimeout.Milliseconds() == 0 {
 		c.CmdTimeout = 1 * time.Minute
 	}
-	c.doneChan = make(chan bool)
+	c.doneChan = make(chan bool, 1)
 	c.wg = &sync.WaitGroup{}
 	return c
 }
