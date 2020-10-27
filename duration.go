@@ -1,7 +1,6 @@
 package patrol
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -11,9 +10,9 @@ func (d duration) isZero() bool {
 	return int64(d) == 0
 }
 
-func (d *duration) UnmarshalJSON(buffer []byte) error {
+func (d *duration) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var str string
-	if err := json.Unmarshal(buffer, &str); err != nil {
+	if err := unmarshal(&str); err != nil {
 		return err
 	}
 	parsedD, err := time.ParseDuration(str)
@@ -24,8 +23,8 @@ func (d *duration) UnmarshalJSON(buffer []byte) error {
 	return nil
 }
 
-func (d duration) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + d.duration().String() + `"`), nil
+func (d duration) MarshalYAML() (interface{}, error) {
+	return d.duration().String(), nil
 }
 
 func (d duration) duration() time.Duration {
