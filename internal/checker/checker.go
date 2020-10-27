@@ -36,6 +36,7 @@ func New(c *Checker) *Checker {
 	}
 	c.doneChan = make(chan bool, 1)
 	c.wg = &sync.WaitGroup{}
+	c.SetLogLevel(logger.LevelInfo)
 	return c
 }
 
