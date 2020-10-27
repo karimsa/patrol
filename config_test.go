@@ -68,7 +68,7 @@ notifications:
 
 func TestConfigValidate(t *testing.T) {
 	os.Remove("config-test.db")
-	if _, err := FromConfig([]byte(configStr), nil); err != nil {
+	if _, _, err := FromConfig([]byte(configStr), nil); err != nil {
 		t.Error(err)
 		return
 	}

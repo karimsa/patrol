@@ -1,6 +1,7 @@
 package patrol
 
 import (
+	"fmt"
 	"github.com/karimsa/patrol/internal/checker"
 	"github.com/karimsa/patrol/internal/history"
 )
@@ -19,10 +20,13 @@ type CreatePatrolOptions struct {
 	Checkers []*checker.Checker
 }
 
-func New(options CreatePatrolOptions) (*Patrol, error) {
-	historyFile, err := history.New(options.History)
-	if err != nil {
-		return nil, err
+func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error) {
+	if historyFile == nil {
+		var err error
+		historyFile, err = history.New(options.History)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Patrol{
@@ -34,6 +38,10 @@ func New(options CreatePatrolOptions) (*Patrol, error) {
 }
 
 func (p *Patrol) Start() {
+	if p.checkers == nil || len(p.checkers) == 0 {
+		panic(fmt.Errorf("Cannot start patrol with zero checkers"))
+	}
+
 	for _, checker := range p.checkers {
 		go checker.Run()
 	}

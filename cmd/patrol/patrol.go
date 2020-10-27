@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/karimsa/patrol"
 	"github.com/urfave/cli/v2"
+	"log"
 	"os"
+	"os/signal"
 )
 
 var (
@@ -23,11 +26,17 @@ var cmdRun = &cli.Command{
 		configFlag,
 	},
 	Action: func(ctx *cli.Context) error {
-		p, err := patrol.FromConfigFile(ctx.String("config"), nil)
+		p, _, err := patrol.FromConfigFile(ctx.String("config"), nil)
 		if err != nil {
 			return err
 		}
-		// ...
+
+		p.Start()
+
+		sigInt := make(chan os.Signal, 1)
+		signal.Notify(sigInt, os.Interrupt)
+		<-sigInt
+
 		p.Close()
 		return nil
 	},
@@ -41,10 +50,18 @@ var cmdCheckConfig = &cli.Command{
 		configFlag,
 	},
 	Action: func(ctx *cli.Context) error {
-		p, err := patrol.FromConfigFile(ctx.String("config"), nil)
+		p, config, err := patrol.FromConfigFile(ctx.String("config"), nil)
 		if err != nil {
 			return err
 		}
+
+		cs, err := json.MarshalIndent(config, "", "\t")
+		if err != nil {
+			return err
+		}
+
+		log.Printf("Config: %s\n", cs)
+		log.Printf("Patrol: %#v\n", p)
 		p.Close()
 		return nil
 	},

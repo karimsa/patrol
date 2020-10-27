@@ -28,8 +28,8 @@ type configRaw struct {
 	Services map[string]struct {
 		Checks []struct {
 			Name       string
-			Interval   time.Duration
-			Timeout    time.Duration
+			Interval   duration
+			Timeout    duration
 			Cmd        string
 			Type       string
 			MetricUnit string `yaml:"unit"`
@@ -39,33 +39,34 @@ type configRaw struct {
 	Notifications notificationsRaw
 }
 
-func FromConfigFile(filePath string, historyOptions *history.NewOptions) (patrol *Patrol, err error) {
+func FromConfigFile(filePath string, historyOptions *history.NewOptions) (*Patrol, configRaw, error) {
 	buffer, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil, err
+		return nil, configRaw{}, err
 	}
 	return FromConfig(buffer, historyOptions)
 }
 
-func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol, err error) {
-	raw := configRaw{}
+func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol, raw configRaw, err error) {
 	err = yaml.UnmarshalStrict(data, &raw)
 	if err != nil {
+		return
+	}
+
+	if raw.Name == "" {
+		raw.Name = "Statuspage"
+	}
+	if raw.Port <= 0 {
+		raw.Port = 80
+	}
+	if raw.DB == "" {
+		err = fmt.Errorf("'db' propery must be specified in config file")
 		return
 	}
 
 	patrolOpts := CreatePatrolOptions{
 		Name: "Statuspage",
 		Port: 80,
-	}
-
-	if raw.Name == "" {
-		patrolOpts.Name = raw.Name
-	}
-
-	if raw.DB == "" {
-		err = fmt.Errorf("'db' propery must be specified in config file")
-		return
 	}
 
 	if historyOptions == nil {
@@ -78,43 +79,58 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 	// each defined service
 	patrolOpts.Checkers = make([]*checker.Checker, 0, len(raw.Services)*5)
 
-	// Needs to be created here, so history file is opened
-	patrol, err = New(patrolOpts)
+	historyFile, err := history.New(patrolOpts.History)
 	if err != nil {
 		return
 	}
 
+	if len(raw.Services) == 0 {
+		err = fmt.Errorf("Config file contains no services")
+		return
+	}
 	for group, groupConfig := range raw.Services {
+		if groupConfig.Checks == nil || len(groupConfig.Checks) == 0 {
+			err = fmt.Errorf("Empty group '%s' defined in config", group)
+			return
+		}
+
 		for idx, checkConfig := range groupConfig.Checks {
-			c := checker.New(&checker.Checker{
+			if checkConfig.Type == "" {
+				checkConfig.Type = "boolean"
+			}
+			if checkConfig.Name == "" {
+				err = fmt.Errorf("%d-th check missing name in %s", idx, group)
+				return
+			}
+			if checkConfig.Cmd == "" {
+				err = fmt.Errorf("%d-th check missing cmd in %s", idx, group)
+				return
+			}
+			if checkConfig.Type == "metric" && checkConfig.MetricUnit == "" {
+				err = fmt.Errorf("%d-th check is of type metric but is missing unit in %s", idx, group)
+				return
+			}
+			if checkConfig.Interval.isZero() {
+				checkConfig.Interval = duration(60 * time.Second)
+			}
+			if checkConfig.Timeout.isZero() {
+				checkConfig.Timeout = duration(3 * time.Minute)
+			}
+
+			groupConfig.Checks[idx] = checkConfig
+			patrolOpts.Checkers = append(patrolOpts.Checkers, checker.New(&checker.Checker{
 				Group:      group,
 				Name:       checkConfig.Name,
 				Type:       checkConfig.Type,
 				Cmd:        checkConfig.Cmd,
 				MetricUnit: checkConfig.MetricUnit,
-				Interval:   checkConfig.Interval,
-				CmdTimeout: checkConfig.Timeout,
-				History:    patrol.history,
-			})
-			if c.Type == "" {
-				c.Type = "boolean"
-			}
-			if c.Name == "" {
-				err = fmt.Errorf("%d-th check missing name in %s", idx, group)
-				return
-			}
-			if c.Cmd == "" {
-				err = fmt.Errorf("%d-th check missing cmd in %s", idx, group)
-				return
-			}
-			if c.Type == "metric" && c.MetricUnit == "" {
-				err = fmt.Errorf("%d-th check is of type metric but is missing unit in %s", idx, group)
-				return
-			}
-
-			patrolOpts.Checkers = append(patrolOpts.Checkers, c)
+				Interval:   checkConfig.Interval.duration(),
+				CmdTimeout: checkConfig.Timeout.duration(),
+				History:    historyFile,
+			}))
 		}
 	}
 
+	patrol, err = New(patrolOpts, historyFile)
 	return
 }
