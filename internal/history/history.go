@@ -127,6 +127,17 @@ func New(options NewOptions) (*File, error) {
 		}
 	}
 
+	numItems := 0
+	for _, group := range file.data {
+		numItems += len(group.byID)
+	}
+	if numItems == 0 {
+		file.logger.Printf("Created new history file: %s", options.File)
+	} else {
+		file.logger.Printf("Opened history file: %s", options.File)
+		file.logger.Printf("Imported %d groups and %d items from history", len(file.data), numItems)
+	}
+
 	go file.bgWriter()
 	return file, nil
 }
