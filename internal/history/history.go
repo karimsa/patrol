@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/karimsa/patrol/internal/logger"
 )
 
 type Item struct {
@@ -90,13 +91,14 @@ type File struct {
 	data       map[string]*dataContainer
 	rwMux      *sync.RWMutex
 	maxEntries int
-	logger     *log.Logger
+	logger     logger.Logger
 }
 
 type NewOptions struct {
 	File                string
 	MaxEntries          int
 	MaxConcurrentWrites int
+	LogLevel            logger.LogLevel
 }
 
 func New(options NewOptions) (*File, error) {
@@ -117,9 +119,9 @@ func New(options NewOptions) (*File, error) {
 		data:       map[string]*dataContainer{},
 		rwMux:      &sync.RWMutex{},
 		maxEntries: options.MaxEntries,
-		logger:     log.New(os.Stdout, "history: ", log.LstdFlags|log.Lmsgprefix),
 	}
-	file.logger.Printf("Opened history file: %s", options.File)
+	file.SetLogLevel(options.LogLevel)
+	file.logger.Debugf("Opened history file: %s", options.File)
 
 	bufferedReader := bufio.NewReader(fd)
 	var item Item
@@ -164,12 +166,16 @@ func New(options NewOptions) (*File, error) {
 		numItems += len(group.byID)
 	}
 	if numItems > 0 {
-		file.logger.Printf("Imported %d groups and %d items from history", len(file.data), numItems)
+		file.logger.Infof("Imported %d groups and %d items from history", len(file.data), numItems)
 	}
 
 	file.writerWg.Add(1)
 	go file.bgWriter()
 	return file, nil
+}
+
+func (file *File) SetLogLevel(level logger.LogLevel) {
+	file.logger = logger.New(level, "history:")
 }
 
 func (file *File) bgWriter() {
@@ -213,18 +219,18 @@ func (file *File) bgWriter() {
 					file.rwMux.Unlock()
 					panic(fmt.Errorf("Wrote only %d bytes to file", n))
 				} else {
-					file.logger.Printf("Wrote %d records", len(records))
+					file.logger.Debugf("Wrote %d records", len(records))
 					file.rwMux.Unlock()
 					sendError(records, nil)
 				}
 
 				if err := file.fd.Sync(); err != nil {
-					file.logger.Printf("Warning: fsync failed: %s", err)
+					file.logger.Warnf("fsync failed: %s", err)
 				}
 			}
 
 		case <-file.done:
-			file.logger.Printf("Closing history file")
+			file.logger.Debugf("Closing history file")
 			return
 		}
 	}
@@ -260,7 +266,7 @@ func (file *File) addItem(item Item) Item {
 	node.value = item
 
 	if item.Type == "metric" || !exists {
-		file.logger.Printf("Inserting (size = %d): %s", len(container.byID), item)
+		file.logger.Debugf("Inserting (size = %d): %s", len(container.byID), item)
 
 		if container.head == nil {
 			container.head = node
@@ -292,7 +298,7 @@ func (file *File) addItem(item Item) Item {
 
 			for len(container.byID) > file.maxEntries {
 				drop := container.tail
-				file.logger.Printf("Dropping old item: %s", drop.value)
+				file.logger.Debugf("Dropping old item: %s", drop.value)
 				container.tail = drop.prev
 				if container.tail == nil {
 					container.head = nil
@@ -303,7 +309,7 @@ func (file *File) addItem(item Item) Item {
 			}
 		}
 	} else {
-		file.logger.Printf("Replacing: %s", item)
+		file.logger.Debugf("Replacing: %s", item)
 	}
 
 	return item
@@ -311,17 +317,11 @@ func (file *File) addItem(item Item) Item {
 
 func (file *File) Append(item Item) error {
 	errChan := make(chan error)
-	fmt.Printf("adding to write queue: %s\n", item.Output)
 	file.writes <- writeRequest{
 		item:    item,
 		errChan: errChan,
 	}
 	return <-errChan
-
-	// file.rwMux.Lock()
-	// err := file.addItem(item).writeTo(file.fd)
-	// file.rwMux.Unlock()
-	// return err
 }
 
 func (file *File) GetGroups() []string {

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/karimsa/patrol/internal/history"
+	"github.com/karimsa/patrol/internal/logger"
 )
 
 type Checker struct {
@@ -25,17 +25,12 @@ type Checker struct {
 	CmdTimeout time.Duration
 	History    *history.File
 
-	logger   *log.Logger
+	logger   logger.Logger
 	doneChan chan bool
 	wg       *sync.WaitGroup
 }
 
 func New(c *Checker) *Checker {
-	c.logger = log.New(
-		os.Stdout,
-		fmt.Sprintf("%s:%s: ", c.Group, c.Name),
-		log.LstdFlags|log.Lmsgprefix,
-	)
 	if c.CmdTimeout.Milliseconds() == 0 {
 		c.CmdTimeout = 1 * time.Minute
 	}
@@ -44,8 +39,15 @@ func New(c *Checker) *Checker {
 	return c
 }
 
+func (c *Checker) SetLogLevel(level logger.LogLevel) {
+	c.logger = logger.New(
+		level,
+		fmt.Sprintf("%s:%s:", c.Group, c.Name),
+	)
+}
+
 func (c *Checker) Check() history.Item {
-	c.logger.Printf("Checking status")
+	c.logger.Debugf("Checking status")
 
 	stdout := bytes.Buffer{}
 	stderr := bytes.Buffer{}
@@ -101,7 +103,7 @@ func (c *Checker) Check() history.Item {
 		}
 	}
 
-	c.logger.Printf("Check completed: %s", item)
+	c.logger.Infof("Check completed: %s", item)
 	return item
 }
 
@@ -115,6 +117,7 @@ func (c *Checker) Run() {
 			panic(err)
 		}
 
+		c.logger.Infof("Waiting %s before checking again", c.Interval)
 		select {
 		case <-time.After(c.Interval):
 		case <-c.doneChan:

@@ -7,6 +7,7 @@ import (
 
 	"github.com/karimsa/patrol/internal/checker"
 	"github.com/karimsa/patrol/internal/history"
+	"github.com/karimsa/patrol/internal/logger"
 	"gopkg.in/yaml.v2"
 )
 
@@ -25,6 +26,7 @@ type configRaw struct {
 	Name     string
 	Port     int
 	DB       string `yaml:"db"`
+	LogLevel string `yaml:"logLevel"`
 	Services map[string]struct {
 		Checks []struct {
 			Name       string
@@ -63,10 +65,18 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 		err = fmt.Errorf("'db' propery must be specified in config file")
 		return
 	}
+	if raw.LogLevel == "" {
+		raw.LogLevel = "info"
+	}
+	logLevel, err := getLogLevel(raw.LogLevel)
+	if err != nil {
+		return
+	}
 
 	patrolOpts := CreatePatrolOptions{
-		Name: "Statuspage",
-		Port: 80,
+		Name:     "Statuspage",
+		Port:     80,
+		LogLevel: logLevel,
 	}
 
 	if historyOptions == nil {
@@ -133,4 +143,17 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 
 	patrol, err = New(patrolOpts, historyFile)
 	return
+}
+
+func getLogLevel(level string) (logger.LogLevel, error) {
+	switch level {
+	case "none":
+		return logger.LevelNone, nil
+	case "info":
+		return logger.LevelInfo, nil
+	case "debug":
+		return logger.LevelDebug, nil
+	default:
+		return logger.LogLevel(-1), fmt.Errorf("Unrecognized log level: '%s'", level)
+	}
 }

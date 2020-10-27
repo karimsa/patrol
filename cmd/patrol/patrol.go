@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/karimsa/patrol"
-	"github.com/urfave/cli/v2"
 	"log"
 	"os"
 	"os/signal"
+
+	"github.com/karimsa/patrol"
+	"github.com/urfave/cli/v2"
 )
 
 var (
