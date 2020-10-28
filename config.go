@@ -74,8 +74,8 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 	}
 
 	patrolOpts := CreatePatrolOptions{
-		Name:     "Statuspage",
-		Port:     80,
+		Name:     raw.Name,
+		Port:     uint32(raw.Port),
 		LogLevel: logLevel,
 	}
 
