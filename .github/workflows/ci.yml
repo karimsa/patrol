@@ -3,6 +3,8 @@ on:
   push: {}
   pull_request:
     branches: [ master ]
+env:
+  GH_REGISTRY_TOKEN: ${{ secrets.GH_REGISTRY_TOKEN }}
 jobs:
   build:
     name: Build
@@ -14,6 +16,8 @@ jobs:
     #   uses: mxschmitt/action-tmate@v1
     - name: Build
       run: docker build -t ghcr.io/karimsa/patrol:unstable .
+    - name: Login to registry
+      run: docker login --username=karimsa --password=$GH_REGISTRY_TOKEN ghcr.io
     - name: Release unstable
       run: docker push ghcr.io/karimsa/patrol:unstable
     - name: Release stable
