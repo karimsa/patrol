@@ -37,7 +37,7 @@ func TestMultiOpen(t *testing.T) {
 	}
 
 	var runAsserts = func() {
-		items := history.GetGroupItems("staging")
+		items := history.GetGroupItems("staging", "Website is up")
 		if len(items) != 90 {
 			itemsStr := ""
 			for _, item := range items {
@@ -125,7 +125,7 @@ func TestUpserts(t *testing.T) {
 		return
 	}
 
-	items := history.GetGroupItems("staging")
+	items := history.GetGroupItems("staging", "Website is up")
 	if len(items) != 1 {
 		t.Error(fmt.Errorf("Failed to store/retrieve items:\n\nItems:\n\t%#v\n\nHistory:\n\t%#v\n", items, history))
 		return

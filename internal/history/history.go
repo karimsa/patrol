@@ -89,7 +89,7 @@ type File struct {
 	writes     chan writeRequest
 	writerWg   *sync.WaitGroup
 	done       chan bool
-	data       map[string]*dataContainer
+	data       map[string]map[string]*dataContainer
 	rwMux      *sync.RWMutex
 	maxEntries int
 	logger     logger.Logger
@@ -117,7 +117,7 @@ func New(options NewOptions) (*File, error) {
 		writes:     make(chan writeRequest, options.MaxConcurrentWrites),
 		writerWg:   &sync.WaitGroup{},
 		done:       make(chan bool),
-		data:       map[string]*dataContainer{},
+		data:       map[string]map[string]*dataContainer{},
 		rwMux:      &sync.RWMutex{},
 		maxEntries: options.MaxEntries,
 	}
@@ -137,13 +137,17 @@ func New(options NewOptions) (*File, error) {
 		}
 	}
 
+	numItems := 0
 	if len(file.data) > 0 {
 		// Re-initialize the AOF
 		writeBuffer := &bytes.Buffer{}
-		for _, container := range file.data {
-			for curr := container.head; curr != nil; curr = curr.next {
-				if err := curr.value.writeTo(writeBuffer); err != nil {
-					return nil, err
+		for _, group := range file.data {
+			for _, container := range group {
+				for curr := container.head; curr != nil; curr = curr.next {
+					if err := curr.value.writeTo(writeBuffer); err != nil {
+						return nil, err
+					}
+					numItems += 1
 				}
 			}
 		}
@@ -162,10 +166,6 @@ func New(options NewOptions) (*File, error) {
 		}
 	}
 
-	numItems := 0
-	for _, group := range file.data {
-		numItems += len(group.byID)
-	}
 	if numItems > 0 {
 		file.logger.Infof("Imported %d groups and %d items from history", len(file.data), numItems)
 	}
@@ -239,11 +239,14 @@ func (file *File) bgWriter() {
 
 func (file *File) addItem(item Item) Item {
 	if _, ok := file.data[item.Group]; !ok {
-		file.data[item.Group] = &dataContainer{
+		file.data[item.Group] = make(map[string]*dataContainer, 1)
+	}
+	if _, ok := file.data[item.Group][item.Name]; !ok {
+		file.data[item.Group][item.Name] = &dataContainer{
 			byID: make(map[string]*listNode, 100),
 		}
 	}
-	container := file.data[item.Group]
+	container := file.data[item.Group][item.Name]
 
 	if item.Type == "boolean" {
 		item.ID = fmt.Sprintf("%s|%s|%d|0", item.Group, item.Name, item.CreatedAt.UTC().UnixNano()/int64(24*time.Hour))
@@ -325,6 +328,25 @@ func (file *File) Append(item Item) error {
 	return <-errChan
 }
 
+func (file *File) GetData() map[string]map[string][]Item {
+	data := make(map[string]map[string][]Item, len(file.data))
+	file.rwMux.RLock()
+
+	for groupName, group := range file.data {
+		data[groupName] = make(map[string][]Item)
+		for checkName, container := range group {
+			list := make([]Item, 0, len(container.byID))
+			for curr := container.head; curr != nil; curr = curr.next {
+				list = append(list, curr.value)
+			}
+			data[groupName][checkName] = list
+		}
+	}
+
+	file.rwMux.RUnlock()
+	return data
+}
+
 func (file *File) GetGroups() []string {
 	keys := make([]string, len(file.data))
 	idx := 0
@@ -339,9 +361,10 @@ func (file *File) GetGroups() []string {
 	return keys
 }
 
-func (file *File) GetGroupItems(group string) []Item {
+func (file *File) GetGroupItems(group, checkName string) []Item {
 	file.rwMux.RLock()
-	container, _ := file.data[group]
+	g, _ := file.data[group]
+	container, _ := g[checkName]
 	file.rwMux.RUnlock()
 
 	list := make([]Item, 0, len(container.byID))

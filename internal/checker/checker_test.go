@@ -47,7 +47,7 @@ func TestRunLoop(t *testing.T) {
 	<-time.After(1 * time.Second)
 	checker.Close()
 
-	items := historyFile.GetGroupItems("staging")
+	items := historyFile.GetGroupItems("staging", "Network is up")
 	if len(items) != 1 {
 		t.Error(fmt.Errorf("Bad result for history: %#v", items))
 		return
