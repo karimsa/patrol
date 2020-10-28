@@ -6,6 +6,7 @@ RUN cd /app && \
         go build -o /tmp/patrol ./cmd/patrol
 
 FROM alpine
+LABEL org.opencontainers.image.source https://github.com/karimsa/patrol
 COPY --from=0 /tmp/patrol /usr/local/bin/patrol
 ENTRYPOINT ["patrol"]
 CMD ["run"]
