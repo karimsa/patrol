@@ -13,4 +13,11 @@ jobs:
     # - name: SSH Session for Debugging Failure
     #   uses: mxschmitt/action-tmate@v1
     - name: Build
-      run: docker build -t patrol .
+      run: docker build -t ghcr.io/karimsa/patrol:unstable .
+    - name: Release unstable
+      run: docker push ghcr.io/karimsa/patrol:unstable
+    - name: Release stable
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        docker tag ghcr.io/karimsa/patrol:unstable ghcr.io/karimsa/patrol:latest
+        docker push ghcr.io/karimsa/patrol:latest
