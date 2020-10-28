@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/karimsa/patrol/internal/checker"
@@ -13,13 +14,21 @@ import (
 
 type Patrol struct {
 	name     string
+	port int
+	https    *PatrolHttpsOptions
 	history  *history.File
 	checkers []*checker.Checker
 	server   *http.Server
 }
 
+type PatrolHttpsOptions struct {
+	Cert, Key string
+	Port uint32
+}
+
 type CreatePatrolOptions struct {
 	Port     uint32
+	HTTPS    *PatrolHttpsOptions
 	Name     string
 	History  history.NewOptions
 	Checkers []*checker.Checker
@@ -38,11 +47,11 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 
 	p := &Patrol{
 		name:     options.Name,
+		port: int(options.Port),
+		https: options.HTTPS,
 		history:  historyFile,
 		checkers: options.Checkers,
-		server: &http.Server{
-			Addr: fmt.Sprintf("0.0.0.0:%d", options.Port),
-		},
+		server: &http.Server{},
 	}
 	if p.name == "" {
 		p.name = "Statuspage"
@@ -69,7 +78,29 @@ func (p *Patrol) Start() {
 	}
 
 	go func() {
-		if err := p.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		var err error
+		if p.https == nil {
+			p.server.Addr = fmt.Sprintf(":%d", p.port)
+			err = p.server.ListenAndServe()
+		} else {
+			go func() {
+				err := http.ListenAndServe(fmt.Sprintf(":%d", p.port), http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+					headers := res.Header()
+					headers["Location"] = []string{
+						fmt.Sprintf("https://%s:%d", strings.Split(req.Host, ":")[0], p.https.Port),
+					}
+					res.WriteHeader(http.StatusTemporaryRedirect)
+				}))
+				if err != nil && err != http.ErrServerClosed {
+					panic(err)
+				}
+			}()
+
+			p.server.Addr = fmt.Sprintf(":%d", p.https.Port)
+			err = p.server.ListenAndServeTLS(p.https.Cert, p.https.Key)
+		}
+
+		if err != nil && err != http.ErrServerClosed {
 			panic(err)
 		}
 	}()

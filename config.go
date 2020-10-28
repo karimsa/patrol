@@ -25,6 +25,7 @@ type notificationsRaw struct {
 type configRaw struct {
 	Name     string
 	Port     int
+	HTTPS PatrolHttpsOptions `yaml:"https"`
 	DB       string `yaml:"db"`
 	LogLevel string `yaml:"logLevel"`
 	Services map[string]struct {
@@ -83,6 +84,10 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 		patrolOpts.History.File = raw.DB
 	} else {
 		patrolOpts.History = *historyOptions
+	}
+
+	if raw.HTTPS.Cert != "" && raw.HTTPS.Key != "" {
+		patrolOpts.HTTPS = &raw.HTTPS
 	}
 
 	// Just a random guess for size, estimating about 5 checks for
