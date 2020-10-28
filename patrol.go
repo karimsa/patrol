@@ -1,7 +1,10 @@
 package patrol
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/karimsa/patrol/internal/checker"
 	"github.com/karimsa/patrol/internal/history"
@@ -9,10 +12,10 @@ import (
 )
 
 type Patrol struct {
-	port     int
 	name     string
 	history  *history.File
 	checkers []*checker.Checker
+	server   *http.Server
 }
 
 type CreatePatrolOptions struct {
@@ -34,11 +37,17 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 	}
 
 	p := &Patrol{
-		port:     int(options.Port),
 		name:     options.Name,
 		history:  historyFile,
 		checkers: options.Checkers,
+		server: &http.Server{
+			Addr: fmt.Sprintf("0.0.0.0:%d", options.Port),
+		},
 	}
+	if p.name == "" {
+		p.name = "Statuspage"
+	}
+	p.server.Handler = p
 	p.SetLogLevel(options.LogLevel)
 	return p, nil
 }
@@ -58,11 +67,23 @@ func (p *Patrol) Start() {
 	for _, checker := range p.checkers {
 		go checker.Run()
 	}
+
+	go func() {
+		if err := p.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
 }
 
 func (p *Patrol) Stop() {
 	for _, checker := range p.checkers {
 		checker.Close()
+	}
+
+	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancel()
+	if err := p.server.Shutdown(ctx); err != nil {
+		panic(err)
 	}
 }
 
