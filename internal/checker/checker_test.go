@@ -15,7 +15,7 @@ func TestBooleanChecks(t *testing.T) {
 		Name:     "Network is up",
 		Type:     "boolean",
 		Interval: 1 * time.Minute,
-		Cmd:      "ping -c3 8.8.8.8",
+		Cmd:      "ping -c3 localhost",
 	})
 
 	item := checker.Check()
@@ -40,7 +40,7 @@ func TestRunLoop(t *testing.T) {
 		Name:     "Network is up",
 		Type:     "boolean",
 		Interval: 1 * time.Minute,
-		Cmd:      "ping -c3 8.8.8.8",
+		Cmd:      "ping -c3 localhost",
 		History:  historyFile,
 	})
 	go checker.Run()
