@@ -3,7 +3,9 @@ package patrol
 import (
 	"net/http"
 	"text/template"
+	"time"
 
+	"github.com/andanhm/go-prettytime"
 	"github.com/karimsa/patrol/internal/history"
 )
 
@@ -26,6 +28,7 @@ var (
 				}
 				return r
 			},
+			"since": prettytime.Format,
 		}).Parse(`
 			<!doctype html>
 			<html lang="en-US">
@@ -44,27 +47,38 @@ var (
 					</script>
 				</head>
 				<body class="bg-gray-300">
-					<header class="bg-gray-800 py-5">
+					<header class="bg-gray-800 py-12">
 						<div class="container lg:px-20 mx-auto">
 							<h1 class="text-2xl font-bold text-white mb-4">MyApp Status</h1>
-							<div class="bg-green-600 shadow-sm p-5 rounded mb-4 flex items-center justify-between">
-								<p class="font-bold text-xl text-white">All Systems Operational</p>
-								<span class="text-white text-sm">Last updated: a minute ago</span>
+							<div class="{{if (eq .NumServicesDown 0)}}bg-green-700{{else}}bg-red-800{{end}} shadow-sm p-5 rounded mb-4 flex items-center justify-between">
+								{{if (eq .NumServicesDown 0)}}
+									<p class="font-semibold text-xl text-white">All systems operational</p>
+								{{else}}
+									<p class="font-semibold text-xl text-white">{{.NumServicesDown}} Systems are down</p>
+								{{end}}
+								<span class="text-white text-sm">Last updated: {{since .LatestCreatedAt}}</span>
 							</div>
 						</div>
 					</header>
 
-					<main class="container mx-auto lg:px-20 py-5">
+					<main class="container mx-auto lg:px-20 py-12">
 						{{range $groupName, $group := .Groups}}
 							<div class="mb-12">
-								<h4 class="font-bold mb-4 text-2xl">{{$groupName}}</h4>
+								<h2 class="font-bold mb-4 text-2xl">{{$groupName}}</h4>
 								{{range $checkName, $items := $group}}
-									<div class="bg-white shadow-sm p-5 rounded">
-										<div class="mb-3 flex items-center justify-between">
-											<p class="font-bold">{{$checkName}}</p>
+									<div class="bg-white shadow-sm p-5 rounded mb-12">
+										<div class="mb-4 flex items-center justify-between">
+											<h3 class="font-semibold">{{$checkName}}</h3>
 											<div class="flex items-center">
-												<span class="font-bold text-green-600">Healthy</span>
-												<span class="text-gray-500 text-xs ml-4">a minute ago</span>
+												{{if eq (index $items 0).Status "healthy"}}
+													<span class="font-semibold text-green-700">Healthy</span>
+												{{else if eq (index $items 0).Status "unhealthy"}}
+													<span class="font-semibold text-red-800">Unhealthy</span>
+												{{else}}
+													<span class="font-semibold text-orange-600">Recovered</span>
+												{{end}}
+
+												<span class="text-gray-700 text-xs ml-4">{{ since (index $items 0).CreatedAt }}</span>
 											</div>
 										</div>
 
@@ -85,7 +99,7 @@ var (
 														width="2"
 														x="{{ mul (plus $idx 79) 4 }}"
 														y="0"
-														fill="#38a169"
+														fill="{{if eq $item.Status "healthy"}}#38a169{{else}}#9b2c2c{{end}}"
 													/>
 												{{end}}
 											</svg>
@@ -103,12 +117,28 @@ var (
 
 func (p *Patrol) ServeHTTP(res http.ResponseWriter, _ *http.Request) {
 	data := struct {
-		Name   string
-		Groups map[string]map[string][]history.Item
+		Name            string
+		Groups          map[string]map[string][]history.Item
+		NumServicesDown int
+		LatestCreatedAt time.Time
 	}{
-		Name:   p.name,
-		Groups: p.history.GetData(),
+		Name:            p.name,
+		Groups:          p.history.GetData(),
+		NumServicesDown: 0,
+		LatestCreatedAt: time.Unix(0, 0),
 	}
+
+	for _, group := range data.Groups {
+		for _, items := range group {
+			if items[0].Status == "unhealthy" {
+				data.NumServicesDown++
+			}
+			if data.LatestCreatedAt.Before(items[0].CreatedAt) {
+				data.LatestCreatedAt = items[0].CreatedAt
+			}
+		}
+	}
+
 	if err := pageView.Execute(res, data); err != nil {
 		res.WriteHeader(500)
 		res.Write([]byte(err.Error()))
