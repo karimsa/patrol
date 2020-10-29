@@ -1,7 +1,9 @@
 package patrol
 
 import (
+	"log"
 	"net/http"
+	"net/url"
 	"text/template"
 	"time"
 
@@ -62,23 +64,33 @@ var (
 					</header>
 
 					<main class="container mx-auto lg:px-20 py-12">
-						{{range $groupName, $group := .Groups}}
+						{{$data := .}}
+						{{range $groupName, $group := $data.Groups}}
+							{{if eq $groupName (or $data.GroupFilter $groupName)}}
 							<div class="mb-12">
-								<h2 class="font-bold mb-4 text-2xl">{{$groupName}}</h4>
+									<div class="mb-4 flex items-center">
+										<h2 class="font-bold text-2xl inline-block">{{$groupName}}</h2>
+										{{if eq $data.GroupFilter ""}}
+											<a href="/?group={{$groupName}}" class="bg-blue-600 px-2 py-1 rounded text-white shadow-sm text-sm ml-4">Focus</a>
+										{{else}}
+											<a href="/" class="bg-indigo-600 px-2 py-1 rounded text-white shadow-sm text-sm ml-4">Unfocus</a>
+										{{end}}
+									</div>
 								{{range $checkName, $items := $group}}
+										{{$latestItem := index $items 0}}
 									<div class="bg-white shadow-sm p-5 rounded mb-12">
 										<div class="mb-4 flex items-center justify-between">
 											<h3 class="font-semibold">{{$checkName}}</h3>
 											<div class="flex items-center">
-												{{if eq (index $items 0).Status "healthy"}}
+													{{if eq $latestItem.Status "healthy"}}
 													<span class="font-semibold text-green-700">Healthy</span>
-												{{else if eq (index $items 0).Status "unhealthy"}}
+													{{else if eq $latestItem.Status "unhealthy"}}
 													<span class="font-semibold text-red-800">Unhealthy</span>
 												{{else}}
 													<span class="font-semibold text-orange-600">Recovered</span>
 												{{end}}
 
-												<span class="text-gray-700 text-xs ml-4">{{ since (index $items 0).CreatedAt }}</span>
+													<span class="text-gray-700 text-xs ml-4">{{ since $latestItem.CreatedAt }}</span>
 											</div>
 										</div>
 
@@ -108,6 +120,7 @@ var (
 								{{end}}
 							</div>
 						{{end}}
+						{{end}}
 					</main>
 				</body>
 			</html>
@@ -115,17 +128,24 @@ var (
 	)
 )
 
-func (p *Patrol) ServeHTTP(res http.ResponseWriter, _ *http.Request) {
+func (p *Patrol) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	query, err := url.ParseQuery(req.URL.RawQuery)
+	if err != nil {
+		log.Printf("warn: Query parsing failed: %s", err)
+	}
+
 	data := struct {
 		Name            string
 		Groups          map[string]map[string][]history.Item
 		NumServicesDown int
 		LatestCreatedAt time.Time
+		GroupFilter     string
 	}{
 		Name:            p.name,
 		Groups:          p.history.GetData(),
 		NumServicesDown: 0,
 		LatestCreatedAt: time.Unix(0, 0),
+		GroupFilter:     query.Get("group"),
 	}
 
 	for _, group := range data.Groups {
