@@ -13,6 +13,7 @@ function html_min() {
 
 cat > static.go << EOF
 package patrol
+
 var indexHTML = \`$(cat index.html | html_min)\`
 var stylesCSS = \`$(tailwindcss build | postcss)\`
 EOF
