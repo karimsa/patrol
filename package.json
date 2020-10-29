@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "start": "nodemon --signal SIGKILL -w . -e go,yml -x 'go run ./cmd/patrol run --config example.yml || exit 1'"
+  },
   "devDependencies": {
     "cssnano": "^4.1.10",
     "postcss-cli": "^8.1.0",
