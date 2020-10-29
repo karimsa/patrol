@@ -1,1 +1,5 @@
 *.db
+node_modules
+*.pem
+*.crt
+static.go

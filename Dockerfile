@@ -1,6 +1,7 @@
 FROM golang:1.15-alpine
 COPY . /app
 RUN cd /app && \
+        go generate && \
         go vet ./... && \
         go test ./... && \
         go build -o /tmp/patrol ./cmd/patrol
