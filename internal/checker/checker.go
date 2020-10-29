@@ -46,7 +46,9 @@ func New(c *Checker) *Checker {
 	c.doneChan = make(chan bool, 1)
 	c.wg = &sync.WaitGroup{}
 	c.SetLogLevel(logger.LevelInfo)
-	c.History.AddChecker(c)
+	if c.History != nil {
+		c.History.AddChecker(c)
+	}
 	return c
 }
 
