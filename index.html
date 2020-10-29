@@ -18,21 +18,19 @@
     </head>
     <body class="bg-gray-300">
         <header class="bg-gray-800 py-12">
-            <div class="container lg:px-20 mx-auto">
+            <div class="container px-5 lg:px-20 mx-auto">
                 <h1 class="text-2xl font-bold text-white mb-4">MyApp Status</h1>
-                <div class="{{if (eq $data.NumServicesDown 0)}}bg-green-700{{else}}bg-red-800{{end}} shadow-sm p-5 rounded mb-4 flex items-center justify-between">
-                    <div class="flex items-center">	
-                        {{if (eq $data.NumServicesDown 0)}}
-                            <p class="font-semibold text-xl text-white">All systems operational</p>
-                        {{else}}
-                            <p class="font-semibold text-xl text-white">{{.NumServicesDown}} Systems are down</p>
-                        {{end}}
-                    </div>
+                <div class="{{if (eq $data.NumServicesDown 0)}}bg-green-700{{else}}bg-red-800{{end}} shadow-sm p-5 rounded mb-4 text-center md:text-left md:flex items-center justify-between">
+                    {{if (eq $data.NumServicesDown 0)}}
+                        <p class="font-semibold text-xl text-white">All systems operational</p>
+                    {{else}}
+                        <p class="font-semibold text-xl text-white">{{.NumServicesDown}} Systems are down</p>
+                    {{end}}
 
-                    <span class="text-white text-sm">Last updated: {{since .LatestCreatedAt}}</span>
+                    <span class="text-white text-sm text-right">Last updated: {{since .LatestCreatedAt}}</span>
                 </div>
 
-                <div class="-ml-4">
+                <div class="-ml-4 text-center md:text-left">
                 {{if not (eq $data.StatusFilter "")}}
                     <a href="/" class="bg-blue-800 px-2 py-1 rounded text-white shadow text-sm ml-4">Show all</a>
                 {{end}}
@@ -46,7 +44,7 @@
             </div>
         </header>
 
-        <main class="container mx-auto lg:px-20 py-12">
+        <main class="container mx-auto px-5 lg:px-20 py-12">
             {{range $groupName, $group := $data.Groups}}
                 {{if eq $groupName (or $data.GroupFilter $groupName)}}
                     <div class="mb-12">
