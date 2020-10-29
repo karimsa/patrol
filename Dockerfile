@@ -1,5 +1,6 @@
 FROM golang:1.15-alpine
 COPY . /app
+ENV NODE_ENV=production
 RUN cd /app && \
         go generate && \
         go vet ./... && \
