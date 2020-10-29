@@ -49,6 +49,11 @@ var cmdCheckConfig = &cli.Command{
 	Usage:   "Validate statuspage configuration file. Data file will be created if it does not exist and will be compacted if it already exists.",
 	Flags: []cli.Flag{
 		configFlag,
+		&cli.BoolFlag{
+			Name:  "no-compact",
+			Usage: "If specified, compaction is skipped.",
+			Value: false,
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		p, config, err := patrol.FromConfigFile(ctx.String("config"), nil)
@@ -63,6 +68,11 @@ var cmdCheckConfig = &cli.Command{
 
 		log.Printf("Config: %s\n", cs)
 		log.Printf("Patrol: %#v\n", p)
+
+		if !ctx.Bool("no-compact") {
+			p.Compact()
+		}
+
 		p.Close()
 		return nil
 	},
