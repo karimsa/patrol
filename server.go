@@ -28,11 +28,12 @@ var (
 			},
 		}).Parse(`
 			<!doctype html>
-			<html>
+			<html lang="en-US">
 				<head>
 					<meta charset="UTF-8">
 					<title>{{.Name}}</title>
-					<link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet">
+					<meta name="viewport" content="width=device-width, initial-scale=1.0">
+					<link href="https://unpkg.com/tailwindcss@1.9.6/dist/tailwind.min.css" rel="stylesheet">
 					<script src="https://cdnjs.cloudflare.com/ajax/libs/turbolinks/5.2.0/turbolinks.js"></script>
 					<script>
 						function render() { Turbolinks.visit(location.href, { action: 'replace' }) }
