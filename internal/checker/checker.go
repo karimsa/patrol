@@ -15,6 +15,14 @@ import (
 	"github.com/karimsa/patrol/internal/logger"
 )
 
+var (
+	SHELL = os.Getenv("SHELL")
+)
+
+func init() {
+	log.Printf("Initializing with SHELL = %s", SHELL)
+}
+
 type Checker struct {
 	Group      string
 	Name       string
@@ -60,8 +68,10 @@ func (c *Checker) Check() history.Item {
 	)
 	cmd := exec.CommandContext(
 		ctx,
-		"/bin/sh",
-		"-c",
+		SHELL,
+		"-o",
+		"pipefail",
+		"-ec",
 		c.Cmd,
 	)
 	cmd.Stdin = os.Stdin
