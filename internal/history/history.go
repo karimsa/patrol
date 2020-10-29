@@ -267,6 +267,13 @@ func (file *File) addItem(item Item) Item {
 		node = &listNode{}
 		container.byID[item.ID] = node
 	}
+
+	lastValue := node.value
+	if item.Type == "boolean" && item.Status == "healthy" && (lastValue.Status == "unhealthy" || lastValue.Status == "recovered") {
+		item.Status = "recovered"
+	}
+
+	// Writes to "item" after this will have no effect
 	node.value = item
 
 	if item.Type == "metric" || !exists {
