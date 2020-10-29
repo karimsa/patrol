@@ -36,6 +36,8 @@ var (
 					<link href="https://unpkg.com/tailwindcss@1.9.6/dist/tailwind.min.css" rel="stylesheet">
 					<script src="https://cdnjs.cloudflare.com/ajax/libs/turbolinks/5.2.0/turbolinks.js"></script>
 					<script>
+						Turbolinks.Visit.prototype.performScroll = function(){}
+						Turbolinks.BrowserAdapter.prototype.reload = function(){}
 						function render() { Turbolinks.visit(location.href, { action: 'replace' }) }
 						setInterval(render, 5 * 1000)
 						window.addEventListener('focus', render)
