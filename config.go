@@ -25,9 +25,9 @@ type notificationsRaw struct {
 type configRaw struct {
 	Name     string
 	Port     int
-	HTTPS PatrolHttpsOptions `yaml:"https"`
-	DB       string `yaml:"db"`
-	LogLevel string `yaml:"logLevel"`
+	HTTPS    PatrolHttpsOptions `yaml:"https"`
+	DB       string             `yaml:"db"`
+	LogLevel string             `yaml:"logLevel"`
 	Services map[string]struct {
 		Checks []struct {
 			Name       string
