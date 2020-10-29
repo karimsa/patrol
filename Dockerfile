@@ -1,8 +1,9 @@
 FROM golang:1.15-alpine
 COPY . /app
 ENV NODE_ENV=production
+ENV CGO_ENABLED=0
 RUN cd /app && \
-        go generate && \
+        test -e static.go || (echo "Please run go generate first"; exit 1) && \
         go vet ./... && \
         go test ./... && \
         go build -o /tmp/patrol ./cmd/patrol

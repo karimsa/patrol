@@ -21,6 +21,9 @@ var (
 )
 
 func init() {
+	if SHELL == "" {
+		SHELL = "/bin/sh"
+	}
 	log.Printf("Initializing with SHELL = %s", SHELL)
 }
 
