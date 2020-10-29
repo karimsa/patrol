@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -45,7 +46,16 @@ func New(c *Checker) *Checker {
 	c.doneChan = make(chan bool, 1)
 	c.wg = &sync.WaitGroup{}
 	c.SetLogLevel(logger.LevelInfo)
+	c.History.AddChecker(c)
 	return c
+}
+
+func (c *Checker) GetGroup() string {
+	return c.Group
+}
+
+func (c *Checker) GetName() string {
+	return c.Name
 }
 
 func (c *Checker) SetLogLevel(level logger.LogLevel) {

@@ -85,20 +85,22 @@ type dataContainer struct {
 }
 
 type File struct {
-	fd         *os.File
-	writes     chan writeRequest
-	writerWg   *sync.WaitGroup
-	done       chan bool
-	data       map[string]map[string]*dataContainer
-	rwMux      *sync.RWMutex
-	maxEntries int
-	logger     logger.Logger
+	fd          *os.File
+	writes      chan writeRequest
+	writerWg    *sync.WaitGroup
+	done        chan bool
+	data        map[string]map[string]*dataContainer
+	validGroups map[string]map[string]bool
+	rwMux       *sync.RWMutex
+	maxEntries  int
+	logger      logger.Logger
 }
 
 type NewOptions struct {
 	File                string
 	MaxEntries          int
 	MaxConcurrentWrites int
+	Groups              map[string]map[string]bool
 	LogLevel            logger.LogLevel
 }
 
@@ -113,13 +115,17 @@ func New(options NewOptions) (*File, error) {
 	}
 
 	file := &File{
-		fd:         fd,
-		writes:     make(chan writeRequest, options.MaxConcurrentWrites),
-		writerWg:   &sync.WaitGroup{},
-		done:       make(chan bool),
-		data:       map[string]map[string]*dataContainer{},
-		rwMux:      &sync.RWMutex{},
-		maxEntries: options.MaxEntries,
+		fd:          fd,
+		writes:      make(chan writeRequest, options.MaxConcurrentWrites),
+		writerWg:    &sync.WaitGroup{},
+		done:        make(chan bool),
+		data:        map[string]map[string]*dataContainer{},
+		validGroups: options.Groups,
+		rwMux:       &sync.RWMutex{},
+		maxEntries:  options.MaxEntries,
+	}
+	if file.validGroups == nil {
+		file.validGroups = make(map[string]map[string]bool)
 	}
 	file.SetLogLevel(options.LogLevel)
 	file.logger.Debugf("Opened history file: %s", options.File)
@@ -137,46 +143,75 @@ func New(options NewOptions) (*File, error) {
 		}
 	}
 
-	numItems := 0
-	if len(file.data) > 0 {
-		// Re-initialize the AOF
-		writeBuffer := &bytes.Buffer{}
-		for _, group := range file.data {
-			for _, container := range group {
-				for curr := container.head; curr != nil; curr = curr.next {
-					if err := curr.value.writeTo(writeBuffer); err != nil {
-						return nil, err
-					}
-					numItems += 1
-				}
-			}
-		}
-
-		if err := file.fd.Truncate(0); err != nil {
-			return nil, err
-		}
-		if _, err := file.fd.Seek(0, 0); err != nil {
-			return nil, err
-		}
-		if _, err := io.Copy(file.fd, writeBuffer); err != nil {
-			return nil, err
-		}
-		if err := file.fd.Sync(); err != nil {
-			return nil, err
-		}
-	}
-
-	if numItems > 0 {
-		file.logger.Infof("Imported %d groups and %d items from history", len(file.data), numItems)
-	}
-
 	file.writerWg.Add(1)
 	go file.bgWriter()
 	return file, nil
 }
 
+func (file *File) Compact() (numItems int, err error) {
+	file.rwMux.Lock()
+	defer file.rwMux.Unlock()
+
+	writeBuffer := &bytes.Buffer{}
+	for _, group := range file.data {
+		for _, container := range group {
+			for curr := container.head; curr != nil; curr = curr.next {
+				item := curr.value
+				if checkerNames, ok := file.validGroups[item.Group]; !ok {
+					if _, ok := checkerNames[item.Name]; !ok {
+						err = curr.value.writeTo(writeBuffer)
+						if err != nil {
+							return
+						}
+						numItems += 1
+					}
+				}
+			}
+		}
+	}
+
+	err = file.fd.Truncate(0)
+	if err != nil {
+		return
+	}
+
+	_, err = file.fd.Seek(0, 0)
+	if err != nil {
+		return
+	}
+
+	_, err = io.Copy(file.fd, writeBuffer)
+	if err != nil {
+		return
+	}
+
+	err = file.fd.Sync()
+	if err != nil {
+		return
+	}
+
+	file.logger.Infof("Data compacted - %d groups and %d items in history", len(file.data), numItems)
+	return
+}
+
 func (file *File) SetLogLevel(level logger.LogLevel) {
 	file.logger = logger.New(level, "history:")
+}
+
+type checker interface {
+	GetGroup() string
+	GetName() string
+}
+
+func (file *File) AddChecker(c checker) {
+	file.rwMux.RLock()
+	checkers, ok := file.validGroups[c.GetGroup()]
+	if !ok {
+		checkers = make(map[string]bool, 1)
+		file.validGroups[c.GetGroup()] = checkers
+	}
+	checkers[c.GetName()] = true
+	file.rwMux.RUnlock()
 }
 
 func (file *File) bgWriter() {

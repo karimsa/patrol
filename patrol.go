@@ -14,7 +14,7 @@ import (
 
 type Patrol struct {
 	name     string
-	port int
+	port     int
 	https    *PatrolHttpsOptions
 	history  *history.File
 	checkers []*checker.Checker
@@ -23,7 +23,7 @@ type Patrol struct {
 
 type PatrolHttpsOptions struct {
 	Cert, Key string
-	Port uint32
+	Port      uint32
 }
 
 type CreatePatrolOptions struct {
@@ -37,8 +37,17 @@ type CreatePatrolOptions struct {
 
 func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error) {
 	if historyFile == nil {
+		groups := make(map[string]map[string]bool, len(options.Checkers))
+		for _, checker := range options.Checkers {
+			if _, ok := groups[checker.Group]; !ok {
+				groups[checker.Group] = make(map[string]bool, len(options.Checkers))
+			}
+			groups[checker.Group][checker.Name] = true
+		}
+
 		var err error
 		options.History.LogLevel = options.LogLevel
+		options.History.Groups = groups
 		historyFile, err = history.New(options.History)
 		if err != nil {
 			return nil, err
@@ -47,11 +56,11 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 
 	p := &Patrol{
 		name:     options.Name,
-		port: int(options.Port),
-		https: options.HTTPS,
+		port:     int(options.Port),
+		https:    options.HTTPS,
 		history:  historyFile,
 		checkers: options.Checkers,
-		server: &http.Server{},
+		server:   &http.Server{},
 	}
 	if p.name == "" {
 		p.name = "Statuspage"
@@ -66,6 +75,10 @@ func (p *Patrol) SetLogLevel(level logger.LogLevel) {
 	for _, checker := range p.checkers {
 		checker.SetLogLevel(level)
 	}
+}
+
+func (p *Patrol) Compact() (int, error) {
+	return p.history.Compact()
 }
 
 func (p *Patrol) Start() {
