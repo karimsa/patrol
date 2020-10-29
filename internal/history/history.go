@@ -321,6 +321,7 @@ func (file *File) addItem(item Item) Item {
 
 func (file *File) Append(item Item) error {
 	errChan := make(chan error)
+	item.CreatedAt = time.Now()
 	file.writes <- writeRequest{
 		item:    item,
 		errChan: errChan,
