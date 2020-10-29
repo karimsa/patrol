@@ -3,6 +3,7 @@ package patrol
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	"github.com/karimsa/patrol/internal/checker"
@@ -22,6 +23,28 @@ type notificationsRaw struct {
 	} `yaml:"on_success"`
 }
 
+type checkCmd string
+
+func (cmd *checkCmd) String() string {
+	return string(*cmd)
+}
+func (cmd *checkCmd) isZero() bool {
+	return string(*cmd) == ""
+}
+func (cmd *checkCmd) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var slice []string
+	if err := unmarshal(&slice); err == nil {
+		*cmd = checkCmd(strings.Join(slice, ";"))
+		return nil
+	}
+	var str string
+	if err := unmarshal(&str); err != nil {
+		return err
+	}
+	*cmd = checkCmd(str)
+	return nil
+}
+
 type configRaw struct {
 	Name     string
 	Port     int
@@ -33,7 +56,7 @@ type configRaw struct {
 			Name       string
 			Interval   duration
 			Timeout    duration
-			Cmd        string
+			Cmd        checkCmd
 			Type       string
 			MetricUnit string `yaml:"unit"`
 		}
@@ -117,7 +140,7 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 				err = fmt.Errorf("%d-th check missing name in %s", idx, group)
 				return
 			}
-			if checkConfig.Cmd == "" {
+			if checkConfig.Cmd.isZero() {
 				err = fmt.Errorf("%d-th check missing cmd in %s", idx, group)
 				return
 			}
@@ -137,7 +160,7 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 				Group:      group,
 				Name:       checkConfig.Name,
 				Type:       checkConfig.Type,
-				Cmd:        checkConfig.Cmd,
+				Cmd:        checkConfig.Cmd.String(),
 				MetricUnit: checkConfig.MetricUnit,
 				Interval:   checkConfig.Interval.duration(),
 				CmdTimeout: checkConfig.Timeout.duration(),
