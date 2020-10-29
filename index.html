@@ -34,7 +34,7 @@
 
                 <div class="-ml-4">
                 {{if not (eq $data.StatusFilter "")}}
-                    <a href="/" class="bg-blue-600 px-2 py-1 rounded text-white shadow text-sm ml-4">Show all</a>
+                    <a href="/" class="bg-blue-800 px-2 py-1 rounded text-white shadow text-sm ml-4">Show all</a>
                 {{end}}
                 {{if not (eq $data.StatusFilter "unhealthy")}}
                     <a href="/?status=unhealthy" class="bg-red-800 px-2 py-1 rounded text-white shadow text-sm ml-4">Show unhealthy</a>
@@ -53,7 +53,7 @@
                         <div class="mb-4 flex items-center">
                             <h2 class="font-bold text-2xl inline-block">{{$groupName}}</h2>
                             {{if eq $data.GroupFilter ""}}
-                                <a href="/?group={{$groupName}}" class="bg-blue-600 px-2 py-1 rounded text-white shadow-sm text-sm ml-4">Focus</a>
+                                <a href="/?group={{$groupName}}" class="bg-blue-800 px-2 py-1 rounded text-white shadow-sm text-sm ml-4">Focus</a>
                             {{else}}
                                 <a href="/" class="bg-indigo-600 px-2 py-1 rounded text-white shadow-sm text-sm ml-4">Unfocus</a>
                             {{end}}
@@ -70,7 +70,7 @@
                                             {{else if eq $latestItem.Status "unhealthy"}}
                                                 <span class="font-semibold text-red-800">Unhealthy</span>
                                             {{else}}
-                                                <span class="font-semibold text-orange-600">Recovered</span>
+                                                <span class="font-semibold text-orange-800">Recovered</span>
                                             {{end}}
 
                                             <span class="text-gray-700 text-xs ml-4">{{ since $latestItem.CreatedAt }}</span>
