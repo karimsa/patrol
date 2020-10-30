@@ -8,8 +8,9 @@ RUN cd /app && \
         go test ./... && \
         go build -o /tmp/patrol ./cmd/patrol
 
-FROM alpine
+FROM alpine:3.9
 LABEL org.opencontainers.image.source https://github.com/karimsa/patrol
+RUN apk add --no-cache \
+        curl
 COPY --from=0 /tmp/patrol /usr/local/bin/patrol
 ENTRYPOINT ["patrol"]
-CMD ["run"]
