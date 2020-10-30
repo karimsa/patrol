@@ -84,7 +84,6 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 		}
 	}
 
-	mux := http.NewServeMux()
 	p := &Patrol{
 		name:     options.Name,
 		port:     int(options.Port),
