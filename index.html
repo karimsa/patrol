@@ -102,9 +102,11 @@
                                                 {{$chart := chart $items}}
                                                 {{$chart.SVG}}
                                                 <div class="flex items-center mt-4 justify-center text-sm">
-                                                    <p class="mr-4">Min: <span class="text-blue-700">{{$chart.Min}}</span></p>
-                                                    <p class="mr-4">Max: <span class="text-blue-700">{{$chart.Max}}</span></p>
-                                                    <p class="">Avg: <span class="text-blue-700">{{$chart.Avg}}</span></p>
+                                                    <p>Min: <span class="text-blue-700">{{fmtNum $chart.Min}}</span></p>
+                                                    <span class="px-2">•</span>
+                                                    <p>Max: <span class="text-blue-700">{{fmtNum $chart.Max}}</span></p>
+                                                    <span class="px-2">•</span>
+                                                    <p class="">Avg: <span class="text-blue-700">{{fmtNum $chart.Avg}}</span></p>
                                                 </div>
                                             {{end}}
                                         </div>

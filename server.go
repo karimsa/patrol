@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"text/template"
 	"time"
 
@@ -73,6 +74,13 @@ var (
 				return r
 			},
 			"since": prettytime.Format,
+			"fmtNum": func(n float64) string {
+				parts := strings.Split(fmt.Sprintf("%.2f", n), ".")
+				for i := len(parts[0]) - 3; i > 0; i -= 3 {
+					parts[0] = parts[0][0:i] + ", " + parts[0][i:]
+				}
+				return parts[0] + "." + parts[1]
+			},
 			"chart": func(items []history.Item) chartResult {
 				if len(items) < 1 {
 					return chartResult{SVG: "Data pending"}
