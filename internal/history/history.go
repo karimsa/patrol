@@ -23,7 +23,7 @@ type Item struct {
 	Output     []byte
 	CreatedAt  time.Time
 	Duration   time.Duration
-	Metric     int64
+	Metric     float64
 	MetricUnit string
 	Status     string
 	Error      string
@@ -38,7 +38,7 @@ func (item Item) String() string {
 		fmt.Sprintf("\tOutput: '%s',", strings.Join(strings.Split(string(item.Output), "\n"), "\\n")),
 		fmt.Sprintf("\tCreatedAt: %s,", item.CreatedAt),
 		fmt.Sprintf("\tDuration: %s,", item.Duration),
-		fmt.Sprintf("\tMetric: %d%s,", item.Metric, item.MetricUnit),
+		fmt.Sprintf("\tMetric: %.2f %s,", item.Metric, item.MetricUnit),
 		fmt.Sprintf("\tStatus: %s,", item.Status),
 		fmt.Sprintf("\tError: '%s',", item.Error),
 		fmt.Sprintf("}"),

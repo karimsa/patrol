@@ -1,6 +1,8 @@
 package patrol
 
 import (
+	"bytes"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -9,11 +11,44 @@ import (
 
 	"github.com/andanhm/go-prettytime"
 	"github.com/karimsa/patrol/internal/history"
+	"github.com/wcharczuk/go-chart"
+	"github.com/wcharczuk/go-chart/drawing"
 )
 
 //go:generate ./scripts/build-css.sh
 
+type chartResult struct {
+	SVG           string
+	Min, Max, Avg float64
+}
+
 var (
+	gridMajorStyle = chart.Style{
+		Show:        true,
+		StrokeWidth: 1.5,
+		StrokeColor: drawing.Color{
+			A: 90,
+		},
+	}
+	gridMinorStyle = chart.Style{
+		Show:        true,
+		StrokeWidth: 1.0,
+		StrokeColor: drawing.Color{
+			A: 50,
+		},
+	}
+	metricChartDefaults = chart.Chart{
+		XAxis: chart.XAxis{
+			Style:          chart.StyleShow(),
+			GridMajorStyle: gridMajorStyle,
+			GridMinorStyle: gridMinorStyle,
+		},
+		YAxis: chart.YAxis{
+			Style:          chart.StyleShow(),
+			GridMajorStyle: gridMajorStyle,
+			GridMinorStyle: gridMinorStyle,
+		},
+	}
 	pageView = template.Must(
 		template.New("index").Funcs(template.FuncMap{
 			"mul": func(a, b int) int {
@@ -33,6 +68,52 @@ var (
 				return r
 			},
 			"since": prettytime.Format,
+			"chart": func(items []history.Item) chartResult {
+				if len(items) == 0 {
+					return chartResult{SVG: "Data pending"}
+				}
+
+				res := chartResult{
+					Min: items[0].Metric,
+					Max: items[0].Metric,
+					Avg: 0,
+				}
+				xValues := make([]time.Time, len(items))
+				yValues := make([]float64, len(items))
+				for i, item := range items {
+					xValues[i] = item.CreatedAt
+					yValues[i] = item.Metric
+
+					if res.Min > item.Metric {
+						res.Min = item.Metric
+					}
+					if res.Max < item.Metric {
+						res.Max = item.Metric
+					}
+					res.Avg += item.Metric
+				}
+				res.Avg /= float64(len(items))
+
+				c := metricChartDefaults
+				c.Series = []chart.Series{
+					chart.TimeSeries{
+						XValues: xValues,
+						YValues: yValues,
+						Style: chart.Style{
+							Show:      true,
+							FontColor: drawing.ColorBlack,
+						},
+					},
+				}
+
+				buffer := bytes.Buffer{}
+				if err := c.Render(chart.SVG, &buffer); err != nil {
+					res.SVG = fmt.Sprintf("Failed to render graph: %s", err)
+				} else {
+					res.SVG = string(buffer.Bytes())
+				}
+				return res
+			},
 		}).Parse(indexHTML),
 	)
 )

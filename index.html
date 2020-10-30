@@ -79,6 +79,7 @@
                                         </div>
 
                                         <div>
+                                            {{if eq $latestItem.Type "boolean"}}
                                             <svg class="mx-auto" viewBox="0 0 318 10">
                                                 {{range $_, $idx := nums 0 (sub 80 (len $items))}}
                                                     <rect
@@ -97,6 +98,15 @@
                                                         fill="{{if eq $item.Status "healthy"}}#38a169{{else}}#9b2c2c{{end}}" />
                                                 {{end}}
                                             </svg>
+                                            {{else}}
+                                                {{$chart := chart $items}}
+                                                {{$chart.SVG}}
+                                                <div class="flex items-center mt-4 justify-center text-sm">
+                                                    <p class="mr-4">Min: <span class="text-blue-700">{{$chart.Min}}</span></p>
+                                                    <p class="mr-4">Max: <span class="text-blue-700">{{$chart.Max}}</span></p>
+                                                    <p class="">Avg: <span class="text-blue-700">{{$chart.Avg}}</span></p>
+                                                </div>
+                                            {{end}}
                                         </div>
                                     </div>
                                 {{end}}

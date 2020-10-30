@@ -121,7 +121,7 @@ func (c *Checker) Check() history.Item {
 		item.Status = "healthy"
 
 		if c.Type == "metric" {
-			n, err := strconv.ParseInt(strings.TrimSpace(string(stdout.Bytes())), 10, 64)
+			n, err := strconv.ParseFloat(strings.TrimSpace(string(stdout.Bytes())), 10)
 			if err == nil {
 				item.Metric = n
 			} else {
