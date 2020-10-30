@@ -12,6 +12,19 @@ import (
 	"github.com/karimsa/patrol/internal/logger"
 )
 
+// Options used to setup patrol's HTTP server.
+type PatrolHttpsOptions struct {
+	// Paths to SSL certificate and key files - cannot be zero value.
+	Cert, Key string
+
+	// This port is used to run the HTTPS server. Zero value is invalid
+	// for port.
+	Port uint32
+}
+
+// Patrol instance to manage a set of checkers, a history file, and run
+// a web server to serve the web interface. Currently, instances cannot
+// be created directly. You must use: 'New', 'FromConfig', or 'FromConfigFile'.
 type Patrol struct {
 	name     string
 	port     int
@@ -21,17 +34,34 @@ type Patrol struct {
 	server   *http.Server
 }
 
-type PatrolHttpsOptions struct {
-	Cert, Key string
-	Port      uint32
-}
-
+// Options for creating a new patrol instance.
 type CreatePatrolOptions struct {
-	Port     uint32
-	HTTPS    *PatrolHttpsOptions
-	Name     string
-	History  history.NewOptions
+	// Port at which to listen for HTTP requests. If HTTPS
+	// options are specified, this port simply acts as an
+	// HTTP to HTTPS redirect server.
+	Port uint32
+
+	// HTTPS options to listen on HTTPS as well as HTTP.
+	// Zero value indicates no HTTPS server.
+	HTTPS *PatrolHttpsOptions
+
+	// Name is used to render the web interface. It is used
+	// as the page's <title> and the heading at the top of
+	// the page.
+	Name string
+
+	// History options are used to open and create a new history
+	// file. If a history file is specified to the constructor, this
+	// struct is ignored.
+	History history.NewOptions
+
+	// Set of checkers that should be managed by the patrol instance.
+	// This slice cannot be nil, but it can be empty.
 	Checkers []*checker.Checker
+
+	// Minimum level of logs that should be printed. This value is forced
+	// onto the 'history.File' and 'checker.Checker' objects that are
+	// managed by this patrol instance.
 	LogLevel logger.LogLevel
 }
 
@@ -61,11 +91,9 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 		https:    options.HTTPS,
 		history:  historyFile,
 		checkers: options.Checkers,
-		server: &http.Server{
-			Handler: mux,
-		},
+		server:   &http.Server{},
 	}
-	mux.Handle("/", p)
+	p.server.Handler = p
 	if p.name == "" {
 		p.name = "Statuspage"
 	}
