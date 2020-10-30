@@ -80,24 +80,24 @@
 
                                         <div>
                                             {{if eq $latestItem.Type "boolean"}}
-                                            <svg class="mx-auto" viewBox="0 0 318 10">
-                                                {{range $_, $idx := nums 0 (sub 80 (len $items))}}
-                                                    <rect
-                                                        height="10"
-                                                        width="2"
-                                                        x="{{ mul $idx 4 }}"
-                                                        y="0"
-                                                        fill="#d9dbde" />
-                                                {{end}}
-                                                {{range $idx, $item := $items}}
-                                                    <rect
-                                                        height="10"
-                                                        width="2"
-                                                        x="{{ mul (plus $idx 79) 4 }}"
-                                                        y="0"
-                                                        fill="{{if eq $item.Status "healthy"}}#38a169{{else}}#9b2c2c{{end}}" />
-                                                {{end}}
-                                            </svg>
+                                                <svg class="mx-auto" viewBox="0 0 318 10">
+                                                    {{range $_, $idx := nums 0 (sub 80 (len $items))}}
+                                                        <rect
+                                                            height="10"
+                                                            width="2"
+                                                            x="{{ mul $idx 4 }}"
+                                                            y="0"
+                                                            fill="#d9dbde" />
+                                                    {{end}}
+                                                    {{range $idx, $item := $items}}
+                                                        <rect
+                                                            height="10"
+                                                            width="2"
+                                                            x="{{ mul (plus $idx 79) 4 }}"
+                                                            y="0"
+                                                            fill="{{if eq $item.Status "healthy"}}#38a169{{else}}#9b2c2c{{end}}" />
+                                                    {{end}}
+                                                </svg>
                                             {{else}}
                                                 {{$chart := chart $items}}
                                                 {{$chart.SVG}}
