@@ -42,6 +42,12 @@ func init() {
 }
 
 func (p *Patrol) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("Error while serving http: %s", err)
+		}
+	}()
+
 	query, err := url.ParseQuery(req.URL.RawQuery)
 	if err != nil {
 		log.Printf("warn: Query parsing failed: %s", err)
@@ -51,6 +57,7 @@ func (p *Patrol) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		Name            string
 		Groups          map[string]map[string][]history.Item
 		NumServicesDown int
+		NumServices     int
 		LatestCreatedAt time.Time
 		GroupFilter     string
 		StatusFilter    string
@@ -58,6 +65,7 @@ func (p *Patrol) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		Name:            p.name,
 		Groups:          p.history.GetData(),
 		NumServicesDown: 0,
+		NumServices:     0,
 		LatestCreatedAt: time.Unix(0, 0),
 		GroupFilter:     query.Get("group"),
 		StatusFilter:    query.Get("status"),
@@ -65,11 +73,14 @@ func (p *Patrol) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	for _, group := range data.Groups {
 		for _, items := range group {
-			if items[0].Status == "unhealthy" {
-				data.NumServicesDown++
-			}
-			if data.LatestCreatedAt.Before(items[0].CreatedAt) {
-				data.LatestCreatedAt = items[0].CreatedAt
+			if len(items) > 0 {
+				if items[0].Status == "unhealthy" {
+					data.NumServicesDown++
+				}
+				if data.LatestCreatedAt.Before(items[0].CreatedAt) {
+					data.LatestCreatedAt = items[0].CreatedAt
+				}
+				data.NumServices++
 			}
 		}
 	}

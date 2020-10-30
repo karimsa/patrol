@@ -24,10 +24,12 @@
                     {{if (eq $data.NumServicesDown 0)}}
                         <p class="font-semibold text-xl text-white">All systems operational</p>
                     {{else}}
-                        <p class="font-semibold text-xl text-white">{{.NumServicesDown}} Systems are down</p>
+                        <p class="font-semibold text-xl text-white">{{$data.NumServicesDown}} Systems are down</p>
                     {{end}}
 
-                    <span class="text-white text-sm text-right">Last updated: {{since .LatestCreatedAt}}</span>
+                    {{if gt $data.NumServices 0}}
+                        <span class="text-white text-sm text-right">Last updated: {{since $data.LatestCreatedAt}}</span>
+                    {{end}}
                 </div>
 
                 <div class="-ml-4 text-center md:text-left">
@@ -57,45 +59,47 @@
                             {{end}}
                         </div>
                         {{range $checkName, $items := $group}}
-                            {{$latestItem := index $items 0}}
-                            {{if eq $latestItem.Status (or $data.StatusFilter $latestItem.Status)}}
-                                <div class="bg-white shadow-sm p-5 rounded mb-12">
-                                    <div class="mb-4 flex items-center justify-between">
-                                        <h3 class="font-semibold">{{$checkName}}</h3>
-                                        <div class="flex items-center">
-                                            {{if eq $latestItem.Status "healthy"}}
-                                                <span class="font-semibold text-green-700">Healthy</span>
-                                            {{else if eq $latestItem.Status "unhealthy"}}
-                                                <span class="font-semibold text-red-800">Unhealthy</span>
-                                            {{else}}
-                                                <span class="font-semibold text-orange-800">Recovered</span>
-                                            {{end}}
+                            {{if gt (len $items) 0}}
+                                {{$latestItem := index $items 0}}
+                                {{if eq $latestItem.Status (or $data.StatusFilter $latestItem.Status)}}
+                                    <div class="bg-white shadow-sm p-5 rounded mb-12">
+                                        <div class="mb-4 flex items-center justify-between">
+                                            <h3 class="font-semibold">{{$checkName}}</h3>
+                                            <div class="flex items-center">
+                                                {{if eq $latestItem.Status "healthy"}}
+                                                    <span class="font-semibold text-green-700">Healthy</span>
+                                                {{else if eq $latestItem.Status "unhealthy"}}
+                                                    <span class="font-semibold text-red-800">Unhealthy</span>
+                                                {{else}}
+                                                    <span class="font-semibold text-orange-800">Recovered</span>
+                                                {{end}}
 
-                                            <span class="text-gray-700 text-xs ml-4">{{ since $latestItem.CreatedAt }}</span>
+                                                <span class="text-gray-700 text-xs ml-4">{{ since $latestItem.CreatedAt }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <svg class="mx-auto" viewBox="0 0 318 10">
+                                                {{range $_, $idx := nums 0 (sub 80 (len $items))}}
+                                                    <rect
+                                                        height="10"
+                                                        width="2"
+                                                        x="{{ mul $idx 4 }}"
+                                                        y="0"
+                                                        fill="#d9dbde" />
+                                                {{end}}
+                                                {{range $idx, $item := $items}}
+                                                    <rect
+                                                        height="10"
+                                                        width="2"
+                                                        x="{{ mul (plus $idx 79) 4 }}"
+                                                        y="0"
+                                                        fill="{{if eq $item.Status "healthy"}}#38a169{{else}}#9b2c2c{{end}}" />
+                                                {{end}}
+                                            </svg>
                                         </div>
                                     </div>
-
-                                    <div>
-                                        <svg class="mx-auto" viewBox="0 0 318 10">
-                                            {{range $_, $idx := nums 0 (sub 80 (len $items))}}
-                                                <rect
-                                                    height="10"
-                                                    width="2"
-                                                    x="{{ mul $idx 4 }}"
-                                                    y="0"
-                                                    fill="#d9dbde" />
-                                            {{end}}
-                                            {{range $idx, $item := $items}}
-                                                <rect
-                                                    height="10"
-                                                    width="2"
-                                                    x="{{ mul (plus $idx 79) 4 }}"
-                                                    y="0"
-                                                    fill="{{if eq $item.Status "healthy"}}#38a169{{else}}#9b2c2c{{end}}" />
-                                            {{end}}
-                                        </svg>
-                                    </div>
-                                </div>
+                                {{end}}
                             {{end}}
                         {{end}}
                     </div>

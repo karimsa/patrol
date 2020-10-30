@@ -101,11 +101,12 @@ func (p *Patrol) Start() {
 		} else {
 			go func() {
 				err := http.ListenAndServe(fmt.Sprintf(":%d", p.port), http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-					headers := res.Header()
-					headers["Location"] = []string{
+					http.Redirect(
+						res,
+						req,
 						fmt.Sprintf("https://%s:%d", strings.Split(req.Host, ":")[0], p.https.Port),
-					}
-					res.WriteHeader(http.StatusTemporaryRedirect)
+						http.StatusTemporaryRedirect,
+					)
 				}))
 				if err != nil && err != http.ErrServerClosed {
 					panic(err)
