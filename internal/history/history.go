@@ -114,6 +114,13 @@ func New(options NewOptions) (*File, error) {
 		return nil, err
 	}
 
+	if options.MaxEntries == 0 {
+		options.MaxEntries = 100
+	}
+	if options.MaxConcurrentWrites == 0 {
+		options.MaxConcurrentWrites = 10
+	}
+
 	file := &File{
 		fd:          fd,
 		writes:      make(chan writeRequest, options.MaxConcurrentWrites),
