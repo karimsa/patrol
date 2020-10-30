@@ -125,6 +125,7 @@ func (c *Checker) Check() history.Item {
 			if err == nil {
 				item.Metric = n
 			} else {
+				item.Status = "unhealthy"
 				item.Error = fmt.Sprintf("Failed to parse metric from output: %s", err)
 			}
 		}
