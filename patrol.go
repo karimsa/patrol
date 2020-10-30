@@ -54,18 +54,21 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 		}
 	}
 
+	mux := http.NewServeMux()
 	p := &Patrol{
 		name:     options.Name,
 		port:     int(options.Port),
 		https:    options.HTTPS,
 		history:  historyFile,
 		checkers: options.Checkers,
-		server:   &http.Server{},
+		server: &http.Server{
+			Handler: mux,
+		},
 	}
+	mux.Handle("/", p)
 	if p.name == "" {
 		p.name = "Statuspage"
 	}
-	p.server.Handler = p
 	p.SetLogLevel(options.LogLevel)
 	return p, nil
 }
