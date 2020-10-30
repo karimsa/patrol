@@ -37,6 +37,11 @@ var (
 			A: 50,
 		},
 	}
+	seriesStyle = chart.Style{
+		Show:        true,
+		FontColor:   drawing.ColorBlack,
+		StrokeWidth: 3,
+	}
 	metricChartDefaults = chart.Chart{
 		XAxis: chart.XAxis{
 			Style:          chart.StyleShow(),
@@ -99,10 +104,7 @@ var (
 					chart.TimeSeries{
 						XValues: xValues,
 						YValues: yValues,
-						Style: chart.Style{
-							Show:      true,
-							FontColor: drawing.ColorBlack,
-						},
+						Style:   seriesStyle,
 					},
 				}
 
