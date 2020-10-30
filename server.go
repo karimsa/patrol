@@ -120,11 +120,11 @@ var (
 				if res.Min == res.Max {
 					c.XAxis.Range = &chart.ContinuousRange{
 						Min: res.Min,
-						Max: res.Max * 1.001,
+						Max: res.Max + 1,
 					}
 					c.YAxis.Range = &chart.ContinuousRange{
 						Min: res.Min,
-						Max: res.Max * 1.001,
+						Max: res.Max + 1,
 					}
 				}
 
