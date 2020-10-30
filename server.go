@@ -69,7 +69,7 @@ var (
 			},
 			"since": prettytime.Format,
 			"chart": func(items []history.Item) chartResult {
-				if len(items) < 2 {
+				if len(items) < 1 {
 					return chartResult{SVG: "Data pending"}
 				}
 
@@ -108,6 +108,10 @@ var (
 
 				// go-chart cannot draw constant functions
 				if res.Min == res.Max {
+					c.XAxis.Range = &chart.ContinuousRange{
+						Min: res.Min,
+						Max: res.Max * 1.001,
+					}
 					c.YAxis.Range = &chart.ContinuousRange{
 						Min: res.Min,
 						Max: res.Max * 1.001,
