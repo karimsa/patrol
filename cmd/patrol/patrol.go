@@ -27,11 +27,17 @@ var cmdRun = &cli.Command{
 		configFlag,
 	},
 	Action: func(ctx *cli.Context) error {
-		p, _, err := patrol.FromConfigFile(ctx.String("config"), nil)
+		p, config, err := patrol.FromConfigFile(ctx.String("config"), nil)
 		if err != nil {
 			return err
 		}
 
+		cs, err := json.MarshalIndent(config, "", "\t")
+		if err != nil {
+			return err
+		}
+
+		log.Printf("Config: %s\n", cs)
 		p.Start()
 
 		sigInt := make(chan os.Signal, 1)
