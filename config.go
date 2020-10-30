@@ -51,6 +51,7 @@ type configRaw struct {
 	HTTPS    PatrolHttpsOptions `yaml:"https"`
 	DB       string             `yaml:"db"`
 	LogLevel string             `yaml:"logLevel"`
+	Compact  history.CompactOptions
 	Services map[string]struct {
 		Checks []struct {
 			Name       string
@@ -108,6 +109,7 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 	} else {
 		patrolOpts.History = *historyOptions
 	}
+	patrolOpts.History.Compact = raw.Compact
 
 	if raw.HTTPS.Cert != "" && raw.HTTPS.Key != "" {
 		patrolOpts.HTTPS = &raw.HTTPS

@@ -2,9 +2,13 @@ package history
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/karimsa/patrol/internal/logger"
 )
 
 func TestMultiOpen(t *testing.T) {
@@ -136,4 +140,76 @@ func TestUpserts(t *testing.T) {
 	}
 
 	history.Close()
+}
+
+func TestAutoCompact(t *testing.T) {
+	dbFile := "./history-test-autocompact.db"
+	os.Remove(dbFile)
+	history, err := New(
+		NewOptions{
+			File:       dbFile,
+			MaxEntries: 10,
+			LogLevel:   logger.LevelDebug,
+		},
+	)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	for i := 0; i < 100; i++ {
+		if err := history.Append(Item{
+			Group:     "staging",
+			Name:      "Website is up",
+			Type:      "boolean",
+			Output:    []byte("1st"),
+			CreatedAt: time.Now(),
+		}); err != nil {
+			t.Error(err)
+			return
+		}
+	}
+	history.Close()
+	if data, err := ioutil.ReadFile(dbFile); err != nil {
+		t.Error(err)
+		return
+	} else if lines := len(strings.Split(string(data), "\n")); lines < 100 {
+		t.Error(fmt.Errorf("Compaction happened too early: %s", data))
+		return
+	}
+
+	// With compaction options
+	history, err = New(
+		NewOptions{
+			File:       dbFile,
+			MaxEntries: 10,
+			Compact: CompactOptions{
+				MaxWrites: 10,
+			},
+			LogLevel: logger.LevelDebug,
+		},
+	)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	for i := 0; i < 100; i++ {
+		if err := history.Append(Item{
+			Group:     "staging",
+			Name:      "Website is up",
+			Type:      "boolean",
+			Output:    []byte{},
+			CreatedAt: time.Now(),
+		}); err != nil {
+			t.Error(err)
+			return
+		}
+	}
+	history.Close()
+	if data, err := ioutil.ReadFile(dbFile); err != nil {
+		t.Error(err)
+		return
+	} else if lines := len(strings.Split(string(data), "\n")); lines > 10 {
+		t.Error(fmt.Errorf("Compaction happened too early: %s", data))
+		return
+	}
 }

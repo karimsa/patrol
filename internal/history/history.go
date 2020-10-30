@@ -51,10 +51,17 @@ func (item Item) writeTo(out io.Writer) error {
 		return err
 	}
 	n, err := out.Write(append(data, '\n'))
-	if n < len(data) {
-		return fmt.Errorf("Wrote partial data (error: %s)", err)
+	if n < len(data) && n > 0 {
+		// TODO: How to recover from this?
+		panic(fmt.Errorf("Wrote partial data (error: %s)", err))
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("Failed to write data out to file")
+	}
+	return nil
 }
 
 func sendError(receivers []writeRequest, err error) {
@@ -84,22 +91,49 @@ type dataContainer struct {
 	tail *listNode
 }
 
+type CompactOptions struct {
+	// Maximum duration to wait before attempting compaction.
+	// Zero value indicates to never compact on interval.
+	Interval        time.Duration
+	lastCompactTime time.Time
+
+	// Maximum number of writes to allow before attempting
+	// compaction. Zero value indicates a maximum of 100 writes.
+	// A negative value will disable this.
+	MaxWrites             int
+	numWritesSinceCompact int
+}
+
+func (o CompactOptions) String() string {
+	return strings.Join([]string{
+		fmt.Sprintf("CompactOptions{"),
+		fmt.Sprintf("\tInterval: %s,", o.Interval),
+		fmt.Sprintf("\tLast compact: %s,", o.lastCompactTime),
+		fmt.Sprintf("\tSince last compact: %s,", time.Since(o.lastCompactTime)),
+		fmt.Sprintf("\tMaxWrites: %d,", o.MaxWrites),
+		fmt.Sprintf("\tWrites since last compact: %d,", o.numWritesSinceCompact),
+		fmt.Sprintf("}"),
+	}, "\n")
+}
+
 type File struct {
-	fd          *os.File
-	writes      chan writeRequest
-	writerWg    *sync.WaitGroup
-	done        chan bool
-	data        map[string]map[string]*dataContainer
-	validGroups map[string]map[string]bool
-	rwMux       *sync.RWMutex
-	maxEntries  int
-	logger      logger.Logger
+	fd             *os.File
+	writes         chan writeRequest
+	writerWg       *sync.WaitGroup
+	done           chan bool
+	data           map[string]map[string]*dataContainer
+	validGroups    map[string]map[string]bool
+	rwMux          *sync.RWMutex
+	maxEntries     int
+	compactOptions CompactOptions
+	logger         logger.Logger
 }
 
 type NewOptions struct {
 	File                string
 	MaxEntries          int
 	MaxConcurrentWrites int
+	Compact             CompactOptions
 	Groups              map[string]map[string]bool
 	LogLevel            logger.LogLevel
 }
@@ -120,16 +154,20 @@ func New(options NewOptions) (*File, error) {
 	if options.MaxConcurrentWrites == 0 {
 		options.MaxConcurrentWrites = 10
 	}
+	if options.Compact.MaxWrites == 0 {
+		options.Compact.MaxWrites = 100
+	}
 
 	file := &File{
-		fd:          fd,
-		writes:      make(chan writeRequest, options.MaxConcurrentWrites),
-		writerWg:    &sync.WaitGroup{},
-		done:        make(chan bool),
-		data:        map[string]map[string]*dataContainer{},
-		validGroups: options.Groups,
-		rwMux:       &sync.RWMutex{},
-		maxEntries:  options.MaxEntries,
+		fd:             fd,
+		writes:         make(chan writeRequest, options.MaxConcurrentWrites),
+		writerWg:       &sync.WaitGroup{},
+		done:           make(chan bool),
+		data:           map[string]map[string]*dataContainer{},
+		validGroups:    options.Groups,
+		rwMux:          &sync.RWMutex{},
+		maxEntries:     options.MaxEntries,
+		compactOptions: options.Compact,
 	}
 	if file.validGroups == nil {
 		file.validGroups = make(map[string]map[string]bool)
@@ -146,7 +184,7 @@ func New(options NewOptions) (*File, error) {
 			if err := json.Unmarshal(line[:len(line)-1], &item); err != nil {
 				return nil, err
 			}
-			file.addItem(item)
+			file.addItem(item, nil)
 		}
 	}
 
@@ -155,10 +193,7 @@ func New(options NewOptions) (*File, error) {
 	return file, nil
 }
 
-func (file *File) Compact() (numItems int, err error) {
-	file.rwMux.Lock()
-	defer file.rwMux.Unlock()
-
+func (file *File) doCompact() (numItems int, err error) {
 	writeBuffer := &bytes.Buffer{}
 	for _, group := range file.data {
 		for _, container := range group {
@@ -201,6 +236,27 @@ func (file *File) Compact() (numItems int, err error) {
 	return
 }
 
+func (file *File) maybeCompact() {
+	if file.compactOptions.numWritesSinceCompact > file.compactOptions.MaxWrites || (file.compactOptions.Interval > 0*time.Second && time.Since(file.compactOptions.lastCompactTime) > file.compactOptions.Interval) {
+		file.logger.Debugf("Starting compaction: %s", file.compactOptions)
+		if _, err := file.doCompact(); err != nil {
+			file.logger.Warnf("Failed to compact file: %s", err)
+		} else {
+			file.compactOptions.numWritesSinceCompact = 0
+			file.compactOptions.lastCompactTime = time.Now()
+		}
+	} else if err := file.fd.Sync(); err != nil {
+		file.logger.Warnf("Failed to flush data file: %s", err)
+	}
+}
+
+func (file *File) Compact() (numItems int, err error) {
+	file.rwMux.Lock()
+	n, err := file.doCompact()
+	file.rwMux.Unlock()
+	return n, err
+}
+
 func (file *File) SetLogLevel(level logger.LogLevel) {
 	file.logger = logger.New(level, "history:")
 }
@@ -231,14 +287,10 @@ func (file *File) bgWriter() {
 			records := make([]writeRequest, 1)
 			records[0] = req
 
-			// TODO: Instead of panicing, it should perform a
-			// rollback on the 'data' state
-
-			buffer := &bytes.Buffer{}
-			req.item = file.addItem(req.item)
-			if err := req.item.writeTo(buffer); err != nil {
+			if err := file.addItem(req.item, file.fd); err != nil {
 				sendError(records, err)
 			} else {
+				file.compactOptions.numWritesSinceCompact++
 				collect := true
 				var err error
 
@@ -246,8 +298,7 @@ func (file *File) bgWriter() {
 					select {
 					case r := <-file.writes:
 						records = append(records, r)
-						r.item = file.addItem(r.item)
-						err = r.item.writeTo(buffer)
+						err = file.addItem(r.item, file.fd)
 					default:
 						collect = false
 					}
@@ -255,20 +306,11 @@ func (file *File) bgWriter() {
 
 				if err != nil {
 					sendError(records, err)
-				} else if n, err := io.Copy(file.fd, buffer); err != nil {
-					file.rwMux.Unlock()
-					panic(err)
-				} else if n < int64(buffer.Len()) {
-					file.rwMux.Unlock()
-					panic(fmt.Errorf("Wrote only %d bytes to file", n))
 				} else {
 					file.logger.Debugf("Wrote %d records", len(records))
+					file.maybeCompact()
 					file.rwMux.Unlock()
 					sendError(records, nil)
-				}
-
-				if err := file.fd.Sync(); err != nil {
-					file.logger.Warnf("fsync failed: %s", err)
 				}
 			}
 
@@ -279,7 +321,7 @@ func (file *File) bgWriter() {
 	}
 }
 
-func (file *File) addItem(item Item) Item {
+func (file *File) addItem(item Item, out io.Writer) error {
 	if _, ok := file.data[item.Group]; !ok {
 		file.data[item.Group] = make(map[string]*dataContainer, 1)
 	}
@@ -313,6 +355,13 @@ func (file *File) addItem(item Item) Item {
 	lastValue := node.value
 	if item.Type == "boolean" && item.Status == "healthy" && (lastValue.Status == "unhealthy" || lastValue.Status == "recovered") {
 		item.Status = "recovered"
+	}
+
+	// Write out first
+	if out != nil {
+		if err := item.writeTo(out); err != nil {
+			return err
+		}
 	}
 
 	// Writes to "item" after this will have no effect
@@ -365,7 +414,7 @@ func (file *File) addItem(item Item) Item {
 		file.logger.Debugf("Replacing: %s", item)
 	}
 
-	return item
+	return nil
 }
 
 func (file *File) Append(item Item) error {
