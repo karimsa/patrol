@@ -19,6 +19,8 @@ function css_min() {
     fi
 }
 
+PATH="$PATH:$(dirname $0)/../node_modules/.bin"
+
 html=`mktemp`
 cat index.html | html_min > $html
 
