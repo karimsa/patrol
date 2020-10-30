@@ -19,9 +19,15 @@ function css_min() {
     fi
 }
 
+html=`mktemp`
+cat index.html | html_min > $html
+
+css=`mktemp`
+tailwindcss build | css_min > $css
+
 cat > static.go << EOF
 package patrol
 
-var indexHTML = \`$(cat index.html | html_min)\`
-var stylesCSS = \`$(tailwindcss build | css_min)\`
+var indexHTML = \`$(cat $html)\`
+var stylesCSS = \`$(cat $css)\`
 EOF
