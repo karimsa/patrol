@@ -98,9 +98,15 @@
                                                             fill="{{if eq $item.Status "healthy"}}#38a169{{else}}#9b2c2c{{end}}" />
                                                     {{end}}
                                                 </svg>
+                                                {{if eq $latestItem.Status "unhealthy"}}
+                                                    <pre class="font-mono p-3 mt-4 bg-gray-300 rounded border-2 border-red-800"><code>{{printf "%s\n---\n\n" $latestItem.Error}}{{or (printf "%s" $latestItem.Output) "(No output)"}}</code></pre>
+                                                {{end}}
                                             {{else}}
                                                 {{$chart := chart $items}}
                                                 {{$chart.SVG}}
+                                                {{if eq $latestItem.Status "unhealthy"}}
+                                                    <pre class="font-mono p-3 mt-6 mb-4 bg-gray-300 rounded border-2 border-red-800"><code>{{printf "%s\n---\n\n" $latestItem.Error}}{{or (printf "%s" $latestItem.Output) "(No output)"}}</code></pre>
+                                                {{end}}
                                                 <div class="flex items-center mt-4 justify-center text-sm">
                                                     <p>Min: <span class="text-blue-700">{{fmtNum $chart.Min}}</span></p>
                                                     <span class="px-2">•</span>
