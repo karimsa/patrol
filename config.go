@@ -12,15 +12,18 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type singleNotificationConfig struct {
+	Type string
+	Options interface{}
+}
+func (sn *singleNotificationConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// TODO: Decode based on type
+	return nil
+}
+
 type notificationsRaw struct {
-	OnFailure []struct {
-		Type    string
-		Options interface{}
-	} `yaml:"on_failure"`
-	OnSuccess []struct {
-		Type    string
-		Options interface{}
-	} `yaml:"on_success"`
+	OnFailure []*singleNotificationConfig `yaml:"on_failure"`
+	OnSuccess []*singleNotificationConfig `yaml:"on_success"`
 }
 
 type checkCmd string
