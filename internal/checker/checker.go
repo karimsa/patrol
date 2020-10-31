@@ -158,23 +158,25 @@ func (c *Checker) check() history.Item {
 	return item
 }
 
-func (c *Checker) Run() {
+func (c *Checker) Start() {
 	c.wg.Add(1)
-	defer c.wg.Done()
+	go func() {
+		defer c.wg.Done()
 
-	for {
-		item := c.Check()
-		if err := c.History.Append(item); err != nil {
-			panic(err)
-		}
+		for {
+			item := c.Check()
+			if err := c.History.Append(item); err != nil {
+				panic(err)
+			}
 
-		c.logger.Infof("Waiting %s before checking again", c.Interval)
-		select {
-		case <-time.After(c.Interval):
-		case <-c.doneChan:
-			return
+			c.logger.Infof("Waiting %s before checking again", c.Interval)
+			select {
+			case <-time.After(c.Interval):
+			case <-c.doneChan:
+				return
+			}
 		}
-	}
+	}()
 }
 
 func (c *Checker) Close() {

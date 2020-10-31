@@ -46,7 +46,7 @@ func TestRunLoop(t *testing.T) {
 		Cmd:      "ping -c3 localhost",
 		History:  historyFile,
 	})
-	go checker.Run()
+	checker.Start()
 	<-time.After(1 * time.Second)
 	checker.Close()
 

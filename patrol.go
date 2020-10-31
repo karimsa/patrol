@@ -115,7 +115,7 @@ func (p *Patrol) Start() {
 	}
 
 	for _, checker := range p.checkers {
-		go checker.Run()
+		checker.Start()
 	}
 
 	go func() {
