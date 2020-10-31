@@ -5,7 +5,7 @@ ENV CGO_ENABLED=0
 RUN cd /app && \
         test -e static.go || (echo "Please run go generate first"; exit 1) && \
         go vet ./... && \
-        go test ./... -race && \
+        go test ./... && \
         go build -o /tmp/patrol ./cmd/patrol
 
 FROM alpine:3.9
