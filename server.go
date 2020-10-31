@@ -166,7 +166,7 @@ func (p *Patrol) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		StatusFilter    string
 	}{
 		Name:            p.name,
-		Groups:          p.history.GetData(),
+		Groups:          p.History.GetData(),
 		NumServicesDown: 0,
 		NumServices:     0,
 		LatestCreatedAt: time.Unix(0, 0),

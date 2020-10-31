@@ -26,10 +26,11 @@ type PatrolHttpsOptions struct {
 // a web server to serve the web interface. Currently, instances cannot
 // be created directly. You must use: 'New', 'FromConfig', or 'FromConfigFile'.
 type Patrol struct {
+	History *history.File
+
 	name     string
 	port     int
 	https    *PatrolHttpsOptions
-	history  *history.File
 	checkers []*checker.Checker
 	server   *http.Server
 }
@@ -88,9 +89,10 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 		name:     options.Name,
 		port:     int(options.Port),
 		https:    options.HTTPS,
-		history:  historyFile,
 		checkers: options.Checkers,
 		server:   &http.Server{},
+
+		History: historyFile,
 	}
 	p.server.Handler = p
 	if p.name == "" {
@@ -101,14 +103,10 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 }
 
 func (p *Patrol) SetLogLevel(level logger.LogLevel) {
-	p.history.SetLogLevel(level)
+	p.History.SetLogLevel(level)
 	for _, checker := range p.checkers {
 		checker.SetLogLevel(level)
 	}
-}
-
-func (p *Patrol) Compact() (int, error) {
-	return p.history.Compact()
 }
 
 func (p *Patrol) Start() {
@@ -164,5 +162,5 @@ func (p *Patrol) Stop() {
 
 func (p *Patrol) Close() {
 	p.Stop()
-	p.history.Close()
+	p.History.Close()
 }

@@ -74,8 +74,88 @@ var cmdCheckConfig = &cli.Command{
 
 		log.Printf("Config: %s\n", cs)
 		if !ctx.Bool("no-compact") {
-			p.Compact()
+			p.History.Compact()
 		}
+
+		p.Close()
+		return nil
+	},
+}
+
+func sliceContains(list []string, str string) bool {
+	if len(list) == 0 {
+		return true
+	}
+	for _, elm := range list {
+		if elm == str {
+			return true
+		}
+	}
+	return false
+}
+
+var cmdList = &cli.Command{
+	Name:    "list",
+	Aliases: []string{"ls"},
+	Usage:   "List records from data file.",
+	Flags: []cli.Flag{
+		configFlag,
+		&cli.StringSliceFlag{
+			Name:  "group",
+			Usage: "Filter by group name",
+		},
+		&cli.StringSliceFlag{
+			Name:  "check",
+			Usage: "Filter by check name",
+		},
+		&cli.StringSliceFlag{
+			Name:  "type",
+			Usage: "Filter by check type (boolean, metric)",
+		},
+		&cli.StringSliceFlag{
+			Name:  "status",
+			Usage: "Filter by status name",
+		},
+		&cli.IntFlag{
+			Name:    "count",
+			Aliases: []string{"c"},
+			Usage:   "Max number of matches to print",
+		},
+	},
+	Action: func(ctx *cli.Context) error {
+		p, _, err := patrol.FromConfigFile(ctx.String("config"), nil)
+		if err != nil {
+			return err
+		}
+
+		groupFilter := ctx.StringSlice("group")
+		checkFilter := ctx.StringSlice("check")
+		typeFilter := ctx.StringSlice("type")
+		statusFilter := ctx.StringSlice("status")
+		maxMatches := ctx.Int("count")
+
+		data := p.History.GetData()
+		numMatches := 0
+	outer:
+		for groupName, group := range data {
+			if sliceContains(groupFilter, groupName) {
+				for checkName, items := range group {
+					if sliceContains(checkFilter, checkName) {
+						for _, item := range items {
+							if sliceContains(typeFilter, item.Type) && sliceContains(statusFilter, item.Status) {
+								fmt.Printf("-\n%s\n", item)
+								numMatches++
+
+								if numMatches >= maxMatches {
+									break outer
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		fmt.Printf("-\n")
 
 		p.Close()
 		return nil
@@ -87,8 +167,9 @@ func main() {
 		Name:  "patrol",
 		Usage: "Host your own statuspages.",
 		Commands: []*cli.Command{
-			cmdRun,
 			cmdCheckConfig,
+			cmdRun,
+			cmdList,
 		},
 		Authors: []*cli.Author{
 			&cli.Author{
