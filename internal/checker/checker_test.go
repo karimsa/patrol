@@ -2,11 +2,14 @@ package checker
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/karimsa/patrol/internal/history"
+	"github.com/karimsa/patrol/internal/logger"
 )
 
 func TestBooleanChecks(t *testing.T) {
@@ -50,6 +53,54 @@ func TestRunLoop(t *testing.T) {
 	items := historyFile.GetGroupItems("staging", "Network is up")
 	if len(items) != 1 {
 		t.Error(fmt.Errorf("Bad result for history: %#v", items))
+		return
+	}
+
+	historyFile.Close()
+}
+
+func TestRetries(t *testing.T) {
+	fd, err := ioutil.TempFile(os.TempDir(), "*")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	fd.Close()
+
+	historyFile, err := history.New(history.NewOptions{
+		File: "history-retries.db",
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	checker := New(&Checker{
+		Group:         "file writer",
+		Name:          "write hello",
+		Type:          "boolean",
+		Interval:      1 * time.Minute,
+		Cmd:           fmt.Sprintf("echo hello world >> %s; exit 1", fd.Name()),
+		RetryInterval: 1 * time.Nanosecond,
+		History:       historyFile,
+	})
+	checker.SetLogLevel(logger.LevelDebug)
+	checker.Check()
+
+	items := historyFile.GetGroupItems("file writer", "write hello")
+	if len(items) == 0 {
+		t.Error(fmt.Errorf("Bad result for history: %#v", items))
+		return
+	}
+
+	data, err := ioutil.ReadFile(fd.Name())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if lines := strings.Split(strings.TrimSpace(string(data)), "\n"); len(lines) != checker.MaxRetries {
+		t.Error(fmt.Errorf("Check not retried enough times: %#v", lines))
 		return
 	}
 

@@ -29,14 +29,16 @@ func init() {
 }
 
 type Checker struct {
-	Group      string
-	Name       string
-	Type       string
-	Cmd        string
-	MetricUnit string
-	Interval   time.Duration
-	CmdTimeout time.Duration
-	History    *history.File
+	Group         string
+	Name          string
+	Type          string
+	Cmd           string
+	MetricUnit    string
+	Interval      time.Duration
+	CmdTimeout    time.Duration
+	MaxRetries    int
+	RetryInterval time.Duration
+	History       *history.File
 
 	logger   logger.Logger
 	doneChan chan bool
@@ -52,6 +54,12 @@ func New(c *Checker) *Checker {
 	c.SetLogLevel(logger.LevelInfo)
 	if c.History != nil {
 		c.History.AddChecker(c)
+	}
+	if c.MaxRetries == 0 {
+		c.MaxRetries = 3
+	}
+	if c.RetryInterval == 0 {
+		c.RetryInterval = 1 * time.Minute
 	}
 	return c
 }
@@ -72,6 +80,21 @@ func (c *Checker) SetLogLevel(level logger.LogLevel) {
 }
 
 func (c *Checker) Check() history.Item {
+	var item history.Item
+	for i := 0; i < c.MaxRetries; i++ {
+		if i > 0 {
+			c.logger.Debugf("Checker failed, retrying in %s", c.RetryInterval)
+			<-time.After(c.RetryInterval)
+		}
+		item = c.check()
+		if item.Status != "unhealthy" {
+			return item
+		}
+	}
+	return item
+}
+
+func (c *Checker) check() history.Item {
 	c.logger.Debugf("Checking status")
 
 	stdout := bytes.Buffer{}
