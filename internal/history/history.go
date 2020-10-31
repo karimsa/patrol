@@ -466,6 +466,10 @@ func (file *File) GetGroupItems(group, checkName string) []Item {
 	container, _ := g[checkName]
 	file.rwMux.RUnlock()
 
+	if container == nil {
+		return []Item{}
+	}
+
 	list := make([]Item, 0, len(container.byID))
 	for curr := container.head; curr != nil; curr = curr.next {
 		list = append(list, curr.value)
