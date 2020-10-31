@@ -13,9 +13,10 @@ import (
 )
 
 type singleNotificationConfig struct {
-	Type string
+	Type    string
 	Options interface{}
 }
+
 func (sn *singleNotificationConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	// TODO: Decode based on type
 	return nil
