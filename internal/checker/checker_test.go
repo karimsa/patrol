@@ -87,7 +87,7 @@ func TestRetries(t *testing.T) {
 	checker.SetLogLevel(logger.LevelDebug)
 	checker.Check()
 
-	items := historyFile.GetGroupItems("file writer", "write hello")
+	items := historyFile.GetGroupItems(checker.Group, checker.Name)
 	if len(items) == 0 {
 		t.Error(fmt.Errorf("Bad result for history: %#v", items))
 		return

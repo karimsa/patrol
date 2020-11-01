@@ -18,14 +18,14 @@ import (
 )
 
 var (
-	SHELL = os.Getenv("SHELL")
+	cmdShell = os.Getenv("SHELL")
 )
 
 func init() {
-	if SHELL == "" {
-		SHELL = "/bin/sh"
+	if cmdShell == "" {
+		cmdShell = "/bin/sh"
 	}
-	log.Printf("Initializing with SHELL = %s", SHELL)
+	log.Printf("Initializing with SHELL = %s", cmdShell)
 }
 
 type Checker struct {
@@ -84,7 +84,11 @@ func (c *Checker) Check() history.Item {
 	for i := 0; i < c.MaxRetries; i++ {
 		if i > 0 {
 			c.logger.Debugf("Checker failed, retrying in %s", c.RetryInterval)
-			<-time.After(c.RetryInterval)
+			select {
+			case <-time.After(c.RetryInterval):
+			case <-c.doneChan:
+				return item
+			}
 		}
 		item = c.check()
 		if item.Status != "unhealthy" {
@@ -107,7 +111,7 @@ func (c *Checker) check() history.Item {
 	)
 	cmd := exec.CommandContext(
 		ctx,
-		SHELL,
+		cmdShell,
 		"-o",
 		"pipefail",
 		"-ec",
@@ -161,12 +165,21 @@ func (c *Checker) check() history.Item {
 func (c *Checker) Start() {
 	c.wg.Add(1)
 	go func() {
-		defer c.wg.Done()
+		defer func() {
+			c.logger.Debugf("Checker stopped")
+			c.wg.Done()
+		}()
 
 		for {
 			item := c.Check()
-			if err := c.History.Append(item); err != nil {
-				panic(err)
+
+			// Only perform write if the 'Close()' was not called already
+			select {
+			case <-c.doneChan:
+			default:
+				if err := c.History.Append(item); err != nil {
+					panic(err)
+				}
 			}
 
 			c.logger.Infof("Waiting %s before checking again", c.Interval)
@@ -180,6 +193,6 @@ func (c *Checker) Start() {
 }
 
 func (c *Checker) Close() {
-	c.doneChan <- true
+	close(c.doneChan)
 	c.wg.Wait()
 }

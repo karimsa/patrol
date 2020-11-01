@@ -3,6 +3,7 @@ package patrol
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -161,6 +162,7 @@ func (p *Patrol) Stop() {
 }
 
 func (p *Patrol) Close() {
+	log.Printf("Waiting for graceful shutdown")
 	p.Stop()
 	p.History.Close()
 }
