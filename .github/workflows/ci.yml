@@ -14,8 +14,14 @@ jobs:
       uses: actions/checkout@v2
     # - name: SSH Session for Debugging Failure
     #   uses: mxschmitt/action-tmate@v1
+    - name: Install
+      cmd: npm ci && go generate
+    - name: Test
+      cmd: |
+        go test ./... -race
+        find . -name '*.db' -type f | xargs rm
     - name: Build
-      run: npm ci && go generate && go test ./... -race && docker build -t ghcr.io/karimsa/patrol:unstable .
+      run: docker build -t ghcr.io/karimsa/patrol:unstable .
     - name: Login to registry
       run: docker login --username=karimsa --password=$GH_REGISTRY_TOKEN ghcr.io
     - name: Release unstable
