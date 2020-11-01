@@ -2,6 +2,7 @@ package patrol
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -23,6 +24,7 @@ import (
 type chartResult struct {
 	SVG           string
 	Min, Max, Avg float64
+	Error         string
 }
 
 var (
@@ -95,7 +97,7 @@ var (
 			},
 			"chart": func(items []history.Item) chartResult {
 				if len(items) < 1 {
-					return chartResult{SVG: "Data pending"}
+					return chartResult{Error: "Data pending"}
 				}
 
 				res := chartResult{
@@ -142,9 +144,9 @@ var (
 
 				buffer := bytes.Buffer{}
 				if err := c.Render(chart.SVG, &buffer); err != nil {
-					res.SVG = fmt.Sprintf("Failed to render graph: %s", err)
+					res.Error = fmt.Sprintf("Failed to render graph: %s", err)
 				} else {
-					res.SVG = string(buffer.Bytes())
+					res.SVG = base64.StdEncoding.EncodeToString(buffer.Bytes())
 				}
 				return res
 			},
