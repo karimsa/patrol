@@ -132,13 +132,20 @@ var (
 
 				// go-chart cannot draw constant functions
 				if res.Min == res.Max {
-					c.XAxis.Range = &chart.ContinuousRange{
-						Min: res.Min,
+					c.YAxis.Range = &chart.ContinuousRange{
+						Min: res.Min - 1,
 						Max: res.Max + 1,
 					}
-					c.YAxis.Range = &chart.ContinuousRange{
-						Min: res.Min,
-						Max: res.Max + 1,
+				}
+				if len(items) == 1 {
+					c.XAxis.Range = &chart.ContinuousRange{
+						Min: float64(items[0].CreatedAt.UnixNano() - int64(24*time.Hour)),
+						Max: float64(items[0].CreatedAt.UnixNano() + int64(24*time.Hour)),
+					}
+				} else if len(items) == 0 {
+					c.XAxis.Range = &chart.ContinuousRange{
+						Min: 0,
+						Max: 1,
 					}
 				}
 
