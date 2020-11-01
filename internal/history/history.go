@@ -105,11 +105,15 @@ type CompactOptions struct {
 }
 
 func (o CompactOptions) String() string {
+	sinceLast := time.Since(o.lastCompactTime).String()
+	if o.lastCompactTime.IsZero() {
+		sinceLast = "never"
+	}
+
 	return strings.Join([]string{
 		fmt.Sprintf("CompactOptions{"),
 		fmt.Sprintf("\tInterval: %s,", o.Interval),
-		fmt.Sprintf("\tLast compact: %s,", o.lastCompactTime),
-		fmt.Sprintf("\tSince last compact: %s,", time.Since(o.lastCompactTime)),
+		fmt.Sprintf("\tSince last compact: %s,", sinceLast),
 		fmt.Sprintf("\tMaxWrites: %d,", o.MaxWrites),
 		fmt.Sprintf("\tWrites since last compact: %d,", o.numWritesSinceCompact),
 		fmt.Sprintf("}"),
@@ -191,6 +195,43 @@ func New(options NewOptions) (*File, error) {
 	file.writerWg.Add(1)
 	go file.bgWriter()
 	return file, nil
+}
+
+func (file *File) String() string {
+	isClosed := false
+	select {
+	case <-file.done:
+		isClosed = true
+	default:
+	}
+
+	cs := strings.Split(file.compactOptions.String(), "\n")
+	for i, s := range cs {
+		if i > 0 {
+			cs[i] = "\t" + s
+		}
+	}
+
+	vgData, err := json.MarshalIndent(file.validGroups, "\t", "\t")
+	vgDataStr := string(vgData)
+	if err != nil {
+		vgDataStr = fmt.Sprintf("(error: %s)", err)
+	}
+
+	data, err := json.MarshalIndent(file.data, "\t", "\t")
+	dataStr := string(data)
+	if err != nil {
+		dataStr = fmt.Sprintf("(error: %s)", err)
+	}
+
+	return strings.Join([]string{
+		fmt.Sprintf("history.File{"),
+		fmt.Sprintf("\tClosed: %t,", isClosed),
+		fmt.Sprintf("\tValidGroups: %s,", vgDataStr),
+		fmt.Sprintf("\tData: %s,", dataStr),
+		fmt.Sprintf("\tCompact: %s,", strings.Join(cs, "\n")),
+		fmt.Sprintf("}"),
+	}, "\n")
 }
 
 func (file *File) doCompact() (numItems int, err error) {

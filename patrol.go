@@ -105,6 +105,24 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 	return p, nil
 }
 
+func (p *Patrol) String() string {
+	hStr := strings.Split(p.History.String(), "\n")
+	for i := 1; i < len(hStr); i++ {
+		hStr[i] = "\t" + hStr[i]
+	}
+
+	return strings.Join([]string{
+		fmt.Sprintf("Patrol{"),
+		fmt.Sprintf("\tname: %s,", p.name),
+		fmt.Sprintf("\tport: %d,", p.port),
+		fmt.Sprintf("\thttps: %#v,", p.https),
+		fmt.Sprintf("\tcheckers: %d checkers,", len(p.checkers)),
+		fmt.Sprintf("\tlogLevel: %d,", p.logLevel),
+		fmt.Sprintf("\tHistory: %s,", strings.Join(hStr, "\n")),
+		fmt.Sprintf("}"),
+	}, "\n")
+}
+
 func (p *Patrol) SetLogLevel(level logger.LogLevel) {
 	p.logLevel = level
 	p.History.SetLogLevel(level)

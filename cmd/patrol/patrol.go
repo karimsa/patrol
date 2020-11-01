@@ -72,7 +72,8 @@ var cmdCheckConfig = &cli.Command{
 			return err
 		}
 
-		log.Printf("Config: %s\n", cs)
+		log.Printf("Config: %s", cs)
+		log.Printf("Patrol: %s", p)
 		if !ctx.Bool("no-compact") {
 			p.History.Compact()
 		}
