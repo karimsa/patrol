@@ -58,12 +58,11 @@ func TestServer(t *testing.T) {
 		t.Error(fmt.Errorf("Server returned non-200 status: %#v", res))
 		return
 	}
-	data, err := ioutil.ReadAll(res.Body)
+	_, err = ioutil.ReadAll(res.Body)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	fmt.Printf("%s\n", data)
 
 	p.Close()
 }
