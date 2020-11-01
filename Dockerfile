@@ -13,6 +13,11 @@ LABEL org.opencontainers.image.source https://github.com/karimsa/patrol
 RUN apk add --no-cache \
         curl
 COPY --from=0 /tmp/patrol /usr/local/bin/patrol
-RUN addgroup -S patrol && adduser -S patrol -G patrol
+RUN addgroup -S patrol && \
+        adduser -S patrol -G patrol && \
+        mkdir /data && \
+        chown -R patrol /data && \
+        chmod 0755 /data
+WORKDIR /data
 USER patrol
 ENTRYPOINT ["patrol"]
