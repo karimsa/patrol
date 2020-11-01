@@ -15,9 +15,9 @@ jobs:
     # - name: SSH Session for Debugging Failure
     #   uses: mxschmitt/action-tmate@v1
     - name: Install
-      cmd: npm ci && go generate
+      run: npm ci && go generate
     - name: Test
-      cmd: |
+      run: |
         go test ./... -race
         find . -name '*.db' -type f | xargs rm
     - name: Build
