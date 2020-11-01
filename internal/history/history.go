@@ -30,12 +30,17 @@ type Item struct {
 }
 
 func (item Item) String() string {
+	output := strings.Join(strings.Split(string(item.Output), "\n"), "\\n")
+	if len(output) > 50 {
+		output = fmt.Sprintf("'%s...' (%d more chars)", output[:50], len(output)-50)
+	}
+
 	return strings.Join([]string{
 		fmt.Sprintf("Item{"),
 		fmt.Sprintf("\tGroup: %s,", item.Group),
 		fmt.Sprintf("\tName: %s,", item.Name),
 		fmt.Sprintf("\tType: %s,", item.Type),
-		fmt.Sprintf("\tOutput: '%s',", strings.Join(strings.Split(string(item.Output), "\n"), "\\n")),
+		fmt.Sprintf("\tOutput: %s,", output),
 		fmt.Sprintf("\tCreatedAt: %s,", item.CreatedAt),
 		fmt.Sprintf("\tDuration: %s,", item.Duration),
 		fmt.Sprintf("\tMetric: %.2f %s,", item.Metric, item.MetricUnit),
