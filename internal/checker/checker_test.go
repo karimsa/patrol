@@ -77,6 +77,7 @@ func TestRetries(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	defer historyFile.Close()
 
 	checker := New(&Checker{
 		Group:         "file writer",
@@ -88,6 +89,8 @@ func TestRetries(t *testing.T) {
 		History:       historyFile,
 	})
 	checker.SetLogLevel(logger.LevelDebug)
+	checker.Check()
+	defer checker.Close()
 
 	var items []history.Item
 	for i := 0; i < 10 && len(items) == 0; i++ {
@@ -98,7 +101,6 @@ func TestRetries(t *testing.T) {
 		t.Error(fmt.Errorf("Bad result for history: %#v", items))
 		return
 	}
-	checker.Check()
 
 	data, err := ioutil.ReadFile(fd.Name())
 	if err != nil {
@@ -110,6 +112,4 @@ func TestRetries(t *testing.T) {
 		t.Error(fmt.Errorf("Check not retried enough times: %#v", lines))
 		return
 	}
-
-	historyFile.Close()
 }
