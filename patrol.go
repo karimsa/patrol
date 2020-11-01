@@ -34,6 +34,7 @@ type Patrol struct {
 	https    *PatrolHttpsOptions
 	checkers []*checker.Checker
 	server   *http.Server
+	logLevel logger.LogLevel
 }
 
 // Options for creating a new patrol instance.
@@ -92,6 +93,7 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 		https:    options.HTTPS,
 		checkers: options.Checkers,
 		server:   &http.Server{},
+		logLevel: options.LogLevel,
 
 		History: historyFile,
 	}
@@ -104,6 +106,7 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 }
 
 func (p *Patrol) SetLogLevel(level logger.LogLevel) {
+	p.logLevel = level
 	p.History.SetLogLevel(level)
 	for _, checker := range p.checkers {
 		checker.SetLogLevel(level)

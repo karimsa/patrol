@@ -11,9 +11,11 @@ import (
 	"time"
 
 	"github.com/andanhm/go-prettytime"
-	"github.com/karimsa/patrol/internal/history"
 	"github.com/wcharczuk/go-chart"
 	"github.com/wcharczuk/go-chart/drawing"
+
+	"github.com/karimsa/patrol/internal/history"
+	"github.com/karimsa/patrol/internal/logger"
 )
 
 //go:generate ./scripts/build-css.sh
@@ -67,9 +69,19 @@ var (
 				return a + b
 			},
 			"nums": func(a, b int) []int {
-				r := make([]int, b-a)
-				for i := a; i < b; i++ {
-					r[i-a] = i
+				if a > b {
+					r := make([]int, a-b+1)
+					for i := 0; a >= b; i++ {
+						r[i] = a
+						a--
+					}
+					return r
+				}
+
+				r := make([]int, b-a+1)
+				for i := 0; a <= b; i++ {
+					r[i] = a
+					a++
 				}
 				return r
 			},
@@ -164,6 +176,7 @@ func (p *Patrol) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		LatestCreatedAt time.Time
 		GroupFilter     string
 		StatusFilter    string
+		Debug           bool
 	}{
 		Name:            p.name,
 		Groups:          p.History.GetData(),
@@ -172,6 +185,7 @@ func (p *Patrol) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		LatestCreatedAt: time.Unix(0, 0),
 		GroupFilter:     query.Get("group"),
 		StatusFilter:    query.Get("status"),
+		Debug:           p.logLevel == logger.LevelDebug,
 	}
 
 	for _, group := range data.Groups {
