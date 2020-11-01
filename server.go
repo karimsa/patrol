@@ -205,6 +205,7 @@ func (p *Patrol) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if err := pageView.Execute(res, data); err != nil {
+		p.logger.Warnf("Failed to execute template: %s", err)
 		res.WriteHeader(500)
 		res.Write([]byte(err.Error()))
 	}

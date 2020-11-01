@@ -3,7 +3,6 @@ package patrol
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -34,6 +33,7 @@ type Patrol struct {
 	https    *PatrolHttpsOptions
 	checkers []*checker.Checker
 	server   *http.Server
+	logger   logger.Logger
 	logLevel logger.LogLevel
 }
 
@@ -94,6 +94,7 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 		checkers: options.Checkers,
 		server:   &http.Server{},
 		logLevel: options.LogLevel,
+		logger:   logger.New(options.LogLevel, ""),
 
 		History: historyFile,
 	}
@@ -125,6 +126,7 @@ func (p *Patrol) String() string {
 
 func (p *Patrol) SetLogLevel(level logger.LogLevel) {
 	p.logLevel = level
+	p.logger = logger.New(level, "")
 	p.History.SetLogLevel(level)
 	for _, checker := range p.checkers {
 		checker.SetLogLevel(level)
@@ -183,7 +185,7 @@ func (p *Patrol) Stop() {
 }
 
 func (p *Patrol) Close() {
-	log.Printf("Waiting for graceful shutdown")
+	p.logger.Infof("Waiting for graceful shutdown")
 	p.Stop()
 	p.History.Close()
 }
