@@ -25,6 +25,11 @@ func init() {
 	if cmdShell == "" {
 		cmdShell = "/bin/sh"
 	}
+	if cmdShell == "/bin/sh" {
+		if str, err := os.Readlink(cmdShell); err == nil && strings.Contains(str, "dash") {
+			cmdShell = "/bin/bash"
+		}
+	}
 	log.Printf("Initializing with SHELL = %s", cmdShell)
 }
 
