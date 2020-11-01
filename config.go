@@ -114,6 +114,7 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 		patrolOpts.History = *historyOptions
 	}
 	patrolOpts.History.Compact = raw.Compact
+	patrolOpts.History.LogLevel = logLevel
 
 	if raw.HTTPS.Cert != "" && raw.HTTPS.Key != "" {
 		patrolOpts.HTTPS = &raw.HTTPS
