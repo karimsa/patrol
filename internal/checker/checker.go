@@ -181,6 +181,8 @@ func (c *Checker) Start() {
 			// Only perform write if the 'Close()' was not called already
 			select {
 			case <-c.doneChan:
+				c.logger.Debugf("Skipping write, checker is closed")
+
 			default:
 				if err := c.History.Append(item); err != nil {
 					panic(err)

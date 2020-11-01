@@ -430,6 +430,10 @@ func (file *File) Append(item Item) error {
 	return <-errChan
 }
 
+func (file *File) GetItems(c checker) []Item {
+	return file.GetGroupItems(c.GetGroup(), c.GetName())
+}
+
 func (file *File) GetData() map[string]map[string][]Item {
 	data := make(map[string]map[string][]Item, len(file.data))
 	file.rwMux.RLock()
