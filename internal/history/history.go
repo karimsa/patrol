@@ -240,14 +240,18 @@ func (file *File) doCompact() (numItems int, err error) {
 		for _, container := range group {
 			for curr := container.head; curr != nil; curr = curr.next {
 				item := curr.value
-				if checkerNames, ok := file.validGroups[item.Group]; !ok {
-					if _, ok := checkerNames[item.Name]; !ok {
+				if checkerNames, ok := file.validGroups[item.Group]; ok {
+					if _, ok := checkerNames[item.Name]; ok {
 						err = curr.value.writeTo(writeBuffer)
 						if err != nil {
 							return
 						}
 						numItems += 1
+					} else {
+						file.logger.Debugf("Skipping item write (invalid checker): %s", item)
 					}
+				} else {
+					file.logger.Debugf("Skipping item write (invalid group): %s", item)
 				}
 			}
 		}

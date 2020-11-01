@@ -150,6 +150,10 @@ func TestAutoCompact(t *testing.T) {
 			File:       dbFile,
 			MaxEntries: 10,
 			LogLevel:   logger.LevelDebug,
+			Compact: CompactOptions{
+				// To verify that compaction doesn't happen unnecessarily
+				MaxWrites: 100000,
+			},
 		},
 	)
 	if err != nil {
@@ -162,20 +166,42 @@ func TestAutoCompact(t *testing.T) {
 			Name:      "Website is up",
 			Type:      "boolean",
 			Output:    []byte("1st"),
+			CreatedAt: time.Unix(0, (time.Now().UnixNano())-int64(24*time.Hour)),
+		}); err != nil {
+			t.Error(err)
+			return
+		}
+	}
+	for i := 0; i < 100; i++ {
+		if err := history.Append(Item{
+			Group:     "staging",
+			Name:      "Website is up",
+			Type:      "boolean",
+			Output:    []byte("2nd"),
 			CreatedAt: time.Now(),
 		}); err != nil {
 			t.Error(err)
 			return
 		}
 	}
-	history.Close()
 	if data, err := ioutil.ReadFile(dbFile); err != nil {
 		t.Error(err)
 		return
-	} else if lines := len(strings.Split(string(data), "\n")); lines < 100 {
-		t.Error(fmt.Errorf("Compaction happened too early: %s", data))
+	} else if lines := len(strings.Split(strings.TrimSpace(string(data)), "\n")); lines < 200 {
+		t.Error(fmt.Errorf("Compaction happened too early: Only %d lines exist in the history file\n%s", lines, data))
 		return
 	}
+
+	history.Compact()
+	if data, err := ioutil.ReadFile(dbFile); err != nil {
+		t.Error(err)
+		return
+	} else if lines := len(strings.Split(strings.TrimSpace(string(data)), "\n")); lines > 2 {
+		t.Error(fmt.Errorf("Compaction failed: %d lines in the history file (should be 2)\n%s", lines, data))
+		return
+	}
+
+	history.Close()
 
 	// With compaction options
 	history, err = New(
@@ -208,8 +234,8 @@ func TestAutoCompact(t *testing.T) {
 	if data, err := ioutil.ReadFile(dbFile); err != nil {
 		t.Error(err)
 		return
-	} else if lines := len(strings.Split(string(data), "\n")); lines > 10 {
-		t.Error(fmt.Errorf("Compaction happened too early: %s", data))
+	} else if lines := len(strings.Split(strings.TrimSpace(string(data)), "\n")); lines > 2 {
+		t.Error(fmt.Errorf("Compaction failed: %d lines in the history file (should be 2)\n%s", lines, data))
 		return
 	}
 }
