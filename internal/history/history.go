@@ -96,6 +96,10 @@ type dataContainer struct {
 	tail *listNode
 }
 
+func (container *dataContainer) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%d items"`, len(container.byID))), nil
+}
+
 type CompactOptions struct {
 	// Maximum duration to wait before attempting compaction.
 	// Zero value indicates to never compact on interval.
@@ -203,6 +207,9 @@ func New(options NewOptions) (*File, error) {
 }
 
 func (file *File) String() string {
+	file.rwMux.RLock()
+	defer file.rwMux.RUnlock()
+
 	isClosed := false
 	select {
 	case <-file.done:
