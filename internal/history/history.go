@@ -353,6 +353,9 @@ func (file *File) addItem(item Item, out io.Writer) error {
 	}
 
 	lastValue := node.value
+	if item.Type == "metric" && container.tail != nil {
+		lastValue = container.tail.value
+	}
 	if item.Type == "boolean" && item.Status == "healthy" && (lastValue.Status == "unhealthy" || lastValue.Status == "recovered") {
 		item.Status = "recovered"
 	}
