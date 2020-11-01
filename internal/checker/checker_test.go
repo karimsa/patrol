@@ -71,7 +71,7 @@ func TestRetries(t *testing.T) {
 	fd.Close()
 
 	historyFile, err := history.New(history.NewOptions{
-		File: "history-retries.db",
+		File: fd.Name() + "-history-retries.db",
 	})
 	if err != nil {
 		t.Error(err)
@@ -89,8 +89,9 @@ func TestRetries(t *testing.T) {
 		History:       historyFile,
 	})
 	checker.SetLogLevel(logger.LevelDebug)
-	checker.Check()
-	defer checker.Close()
+	checker.Start()
+	<-time.After(1 * time.Second)
+	checker.Close()
 
 	var items []history.Item
 	for i := 0; i < 10 && len(items) == 0; i++ {
