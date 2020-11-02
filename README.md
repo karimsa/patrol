@@ -14,7 +14,6 @@
 	- [Installing natively](#installing-natively)
 	- [Running with docker](#running-with-docker)
  - [Usage](#usage)
- - [Docker tags](#docker-tags)
  - [Creating a service](#creating-a-service)
  - [Creating health checks](#creating-health-checks)
 	- [Health check images](#health-check-images)
@@ -34,6 +33,8 @@ $ curl -sf https://gobinaries.com/karimsa/patrol/cmd/patrol | sh
 
 ### Running with docker
 
+Image is hosted at [ghcr.io/karimsa/patrol](https://github.com/users/karimsa/packages/container/package/patrol).
+
 ```shell
 $ docker run \
 		-d \
@@ -47,6 +48,11 @@ $ docker run \
 			run \
 			--config /config/patrol.yml
 ```
+
+There are two tags that are published to the docker repo for this project:
+
+ - `latest`: As per docker convention, this is the latest stable release of patrol.
+ - `unstable`: This is the latest copy of the image from `master` - if you like to live life on the edge.
 
 ## Usage
 
@@ -68,15 +74,6 @@ $ patrol run --config /config/patrol.yml
 This will start patrol on port `80` with the web interface. It will also give patrol access to your host machine's docker daemon so that it can spin up additional containers to run checks.
 
 *Note: limiting the maximum log size for patrol is crucial, since patrol logs every time checks are run.*
-
-## Docker tags
-
-The docker image is hosted at `ghcr.io/karimsa/patrol`.
-
-There are two tags that are published to the docker repo for this project:
-
- - `latest`: As per docker convention, this is the latest stable release of patrol.
- - `unstable`: This is the latest copy of the image from `master` - if you like to live life on the edge.
 
 ## Creating a service
 
