@@ -61,6 +61,7 @@ You can then run `patrol` via docker:
 ```shell
 $ ls
 patrol.yml
+
 $ patrol run --config /config/patrol.yml
 ```
 
@@ -86,7 +87,7 @@ For example, a simple service assigned to 'google.ca' could have the configurati
 ```yaml
 services:
   google.ca:
-	checks:
+    checks:
     - name: Delivers homepage
       cmd: 'curl -fsSL https://www.google.ca/'
 ```
@@ -148,8 +149,10 @@ services:
 		- name: testing environment vars
 		  cmd: 'test "$SECRET" = "hello"'
 EOF
+
 $ patrol run --config patrol.yml
 # the check will always fail here
+
 $ SECRET=hello patrol run --config patrol.yml
 # the check will always pass
 ```
