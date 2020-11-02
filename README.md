@@ -5,8 +5,8 @@
 <p align="center">Host your own uptime monitoring status pages.</p>
 
 <p align="center">
-  <a href="https://circleci.com/gh/karimsa/patrol">
-    <img src="https://circleci.com/gh/karimsa/patrol.svg?style=svg" alt="CircleCI" />
+  <a href="https://github.com/karimsa/patrol/actions">
+    <img src="https://github.com/karimsa/patrol/workflows/CI/badge.svg" alt="CI" />
   </a>
 </p>
 
