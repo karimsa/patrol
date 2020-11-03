@@ -10,6 +10,7 @@ import (
 	"github.com/karimsa/patrol/internal/checker"
 	"github.com/karimsa/patrol/internal/history"
 	"github.com/karimsa/patrol/internal/logger"
+	"github.com/NYTimes/gziphandler"
 )
 
 // Options used to setup patrol's HTTP server.
@@ -98,7 +99,7 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 
 		History: historyFile,
 	}
-	p.server.Handler = p
+	p.server.Handler = gziphandler.GzipHandler(p)
 	if p.name == "" {
 		p.name = "Statuspage"
 	}

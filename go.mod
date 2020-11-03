@@ -3,6 +3,7 @@ module github.com/karimsa/patrol
 go 1.15
 
 require (
+	github.com/NYTimes/gziphandler v1.1.1
 	github.com/andanhm/go-prettytime v1.1.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/urfave/cli/v2 v2.2.0
