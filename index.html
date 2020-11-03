@@ -113,7 +113,10 @@
                                             {{else}}
                                                 {{$chart := chart $items}}
                                                 {{if eq $chart.Error ""}}
-                                                    <img src="data:image/svg+xml;base64,{{$chart.SVG}}" />
+                                                    <img
+                                                        src="data:image/svg+xml;base64,{{$chart.SVG}}"
+                                                        alt="Chart showing metric data points for {{$checkName}} check in {{$groupName}}."
+                                                    />
                                                 {{else}}
                                                     <pre class="font-mono p-3 mt-4 bg-gray-300 rounded border-2 border-red-800 break-words">
                                                         <code>{{$chart.Error}}}</code>
