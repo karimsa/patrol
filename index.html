@@ -7,14 +7,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="turbolinks-cache-control" content="no-cache">
         <style>{{template "styles.css"}}</style>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/turbolinks/5.2.0/turbolinks.js"></script>
-        <script>
-            Turbolinks.Visit.prototype.performScroll = function(){};
-            Turbolinks.BrowserAdapter.prototype.reload = function(){};
-            function render() { Turbolinks.visit(location.href, { action: 'replace' }) };
-            setInterval(render, 5 * 1000);
-            window.addEventListener('focus', render);
-        </script>
+        <script async defer src="https://cdnjs.cloudflare.com/ajax/libs/turbolinks/5.2.0/turbolinks.js"></script>
     </head>
     <body class="bg-gray-300">
         <header class="bg-gray-800 py-12">
@@ -146,5 +139,13 @@
                 {{end}}
             {{end}}
         </main>
+        <script>
+            function render() {
+                Turbolinks.Visit.prototype.performScroll = Turbolinks.BrowserAdapter.prototype.reload = function(){};
+                Turbolinks.visit(location.href, { action: 'replace' })
+            };
+            setInterval(render, 5 * 1000);
+            window.addEventListener('focus', render);
+        </script>
     </body>
 </html>
