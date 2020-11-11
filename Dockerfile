@@ -11,7 +11,8 @@ RUN cd /app && \
 FROM alpine:3.9
 LABEL org.opencontainers.image.source https://github.com/karimsa/patrol
 RUN apk add --no-cache \
-        curl
+        curl \
+        iputils
 COPY --from=0 /tmp/patrol /usr/local/bin/patrol
 RUN addgroup -S patrol && \
         adduser -S patrol -G patrol && \
