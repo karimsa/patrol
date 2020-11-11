@@ -15,7 +15,7 @@ jobs:
     # - name: SSH Session for Debugging Failure
     #   uses: mxschmitt/action-tmate@v1
     - name: Install
-      run: npm ci && go generate
+      run: npm ci && NODE_ENV=production go generate
     - name: Test
       run: |
         go test ./... -race
