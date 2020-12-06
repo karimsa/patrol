@@ -83,10 +83,10 @@ For example, a simple service assigned to 'google.ca' could have the configurati
 
 ```yaml
 services:
-  google.ca:
-    checks:
-    - name: Delivers homepage
-      cmd: 'curl -fsSL https://www.google.ca/'
+	google.ca:
+		checks:
+		- name: Delivers homepage
+		  cmd: 'curl -fsSL https://www.google.ca/'
 ```
 
 ## Creating health checks
@@ -101,10 +101,10 @@ For example:
 
 ```yaml
 services:
-  My App:
-	checks:
-    - name: Delivers login
-      cmd: 'curl -fsSL https://myapp.com/login | grep MyApp'
+	My App:
+		checks:
+		- name: Delivers login
+		  cmd: 'curl -fsSL https://myapp.com/login | grep MyApp'
 ```
 
 **Default shell options**:
