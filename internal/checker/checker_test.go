@@ -28,6 +28,14 @@ func TestBooleanChecks(t *testing.T) {
 	}
 }
 
+type notificationTester struct {
+	notifications [][]string
+}
+
+func (nt *notificationTester) OnCheckerStatus(status, group, item string) {
+	nt.notifications = append(nt.notifications, []string{status, group, item})
+}
+
 func TestRunLoop(t *testing.T) {
 	os.Remove("history-checker.db")
 	historyFile, err := history.New(history.NewOptions{
@@ -46,7 +54,8 @@ func TestRunLoop(t *testing.T) {
 		Cmd:      "ping -c3 localhost",
 		History:  historyFile,
 	})
-	checker.Start(nil)
+	nt := &notificationTester{notifications: make([][]string, 0, 1)}
+	checker.Start(nt)
 
 	var items []history.Item
 	for i := 0; i < 10 && len(items) == 0; i++ {
@@ -56,6 +65,16 @@ func TestRunLoop(t *testing.T) {
 	if len(items) != 1 {
 		t.Error(fmt.Errorf("Bad result for history: %#v", items))
 		return
+	}
+	if len(nt.notifications) == 0 {
+		t.Error(fmt.Errorf("No notifications were sent"))
+		return
+	}
+	for _, n := range nt.notifications {
+		if fmt.Sprintf("%#v", n) != `[]string{"healthy", "staging", "Network is up"}` {
+			t.Error(fmt.Errorf("Wrong notification was sent: %#v", n))
+			return
+		}
 	}
 
 	checker.Close()
