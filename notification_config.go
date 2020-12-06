@@ -17,7 +17,7 @@ type webhookNotification struct {
 	URL     *url.URL `yaml:"url"`
 	Method  string
 	Headers map[string]string
-	Data    string
+	Body    string
 }
 
 func (wn *webhookNotification) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -25,7 +25,7 @@ func (wn *webhookNotification) UnmarshalYAML(unmarshal func(interface{}) error) 
 		URL     string `yaml:"url"`
 		Method  string
 		Headers map[string]string
-		Data    string
+		Body    string
 	}
 	if err := unmarshal(&raw); err != nil {
 		return err
@@ -34,7 +34,7 @@ func (wn *webhookNotification) UnmarshalYAML(unmarshal func(interface{}) error) 
 	*wn = webhookNotification{
 		Method:  "GET",
 		Headers: raw.Headers,
-		Data:    raw.Data,
+		Body:    raw.Body,
 	}
 	if u, err := url.Parse(raw.URL); err != nil {
 		return fmt.Errorf("Failed to parse url: %s", err)
@@ -50,7 +50,7 @@ func (wn *webhookNotification) UnmarshalYAML(unmarshal func(interface{}) error) 
 func (wn *webhookNotification) exec() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, wn.Method, wn.URL.String(), strings.NewReader(wn.Data))
+	req, err := http.NewRequestWithContext(ctx, wn.Method, wn.URL.String(), strings.NewReader(wn.Body))
 	if err != nil {
 		return err
 	}

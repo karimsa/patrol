@@ -15,15 +15,13 @@ services:
       - name: API Status
         interval: 60s
         cmd: 'curl -fsSL https://app.myapp.com/api/v0/status'
-    notifications:
-      on_failure:
-        - type: webhook
-          options:
-            method: delete
-            url: https://api.heroku.com/apps/MY_HEROKU_APP/dynos
-            headers:
-              Authorization: 'Bearer heroku-token'
-              Accept: 'application/vnd.heroku+json; version=3'
+    on_failure:
+    - webhook:
+        method: delete
+        url: https://api.heroku.com/apps/MY_HEROKU_APP/dynos
+        headers:
+          Authorization: 'Bearer heroku-token'
+          Accept: 'application/vnd.heroku+json; version=3'
   Web:
     checks:
     - name: Web delivers homepage
@@ -47,23 +45,20 @@ services:
     - name: Users exist
       interval: 60s
       cmd: 'echo doing stuff'
-notifications:
-  on_failure:
-    - type: webhook
-      options:
-        method: post
-        url: https://hooks.slack.com/services/MY_CUSTOM_WEBHOOK
-        headers:
-          'Content-Type': 'application/json'
-        body: '{"text":"Service \"{{service}}\" is down (check \"{{check.name}}\" failed)."}'
-  on_success:
-    - type: webhook
-      options:
-        method: post
-        url: https://hooks.slack.com/services/MY_CUSTOM_WEBHOOK
-        headers:
-          'Content-Type': 'application/json'
-        body: '{"text":"Service \"{{service}}\" is up (check \"{{check.name}}\" completed)."}'
+on_failure:
+- webhook:
+    method: post
+    url: https://hooks.slack.com/services/MY_CUSTOM_WEBHOOK
+    headers:
+      'Content-Type': 'application/json'
+    body: '{"text":"Service \"{{service}}\" is down (check \"{{check.name}}\" failed)."}'
+on_success:
+  - webhook:
+      method: post
+      url: https://hooks.slack.com/services/MY_CUSTOM_WEBHOOK
+      headers:
+        'Content-Type': 'application/json'
+      body: '{"text":"Service \"{{service}}\" is up (check \"{{check.name}}\" completed)."}'
 `
 
 func TestConfigValidate(t *testing.T) {
