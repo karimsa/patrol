@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NYTimes/gziphandler"
 	"github.com/karimsa/patrol/internal/checker"
 	"github.com/karimsa/patrol/internal/history"
 	"github.com/karimsa/patrol/internal/logger"
-	"github.com/NYTimes/gziphandler"
 )
 
 // Options used to setup patrol's HTTP server.
@@ -29,14 +29,19 @@ type PatrolHttpsOptions struct {
 type Patrol struct {
 	History *history.File
 
-	name     string
-	port     int
-	https    *PatrolHttpsOptions
-	checkers []*checker.Checker
-	server   *http.Server
-	logger   logger.Logger
-	logLevel logger.LogLevel
+	name                string
+	port                int
+	https               *PatrolHttpsOptions
+	checkers            []*checker.Checker
+	server              *http.Server
+	logger              logger.Logger
+	logLevel            logger.LogLevel
+	groupEventHandlers  map[string]EventHandlers
+	globalEventHandlers EventHandlers
 }
+
+// Map that goes from item status values to a list of notification objects
+type EventHandlers map[string][]*singleNotificationConfig
 
 // Options for creating a new patrol instance.
 type CreatePatrolOptions struct {
@@ -67,6 +72,12 @@ type CreatePatrolOptions struct {
 	// onto the 'history.File' and 'checker.Checker' objects that are
 	// managed by this patrol instance.
 	LogLevel logger.LogLevel
+
+	// Event handlers by group
+	GroupEventHandlers map[string]EventHandlers
+
+	// Event handlers for all changes
+	GlobalEventHandlers EventHandlers
 }
 
 func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error) {
@@ -87,15 +98,20 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 			return nil, err
 		}
 	}
+	if options.GroupEventHandlers == nil {
+		return nil, fmt.Errorf("Group event handlers are required to create a patrol instance")
+	}
 
 	p := &Patrol{
-		name:     options.Name,
-		port:     int(options.Port),
-		https:    options.HTTPS,
-		checkers: options.Checkers,
-		server:   &http.Server{},
-		logLevel: options.LogLevel,
-		logger:   logger.New(options.LogLevel, ""),
+		name:                options.Name,
+		port:                int(options.Port),
+		https:               options.HTTPS,
+		checkers:            options.Checkers,
+		server:              &http.Server{},
+		logLevel:            options.LogLevel,
+		logger:              logger.New(options.LogLevel, ""),
+		groupEventHandlers:  options.GroupEventHandlers,
+		globalEventHandlers: options.GlobalEventHandlers,
 
 		History: historyFile,
 	}
@@ -134,13 +150,32 @@ func (p *Patrol) SetLogLevel(level logger.LogLevel) {
 	}
 }
 
+func (p *Patrol) OnCheckerStatus(status, group, checker string) {
+	p.logger.Debugf("status changed: %s, %s, %s", status, group, checker)
+
+	if handlers, ok := p.globalEventHandlers[status]; ok {
+		p.logger.Debugf("Sending global notification for %s status of %s", status, group)
+		for _, n := range handlers {
+			n.Run()
+		}
+	}
+	if groupHandlers, ok := p.groupEventHandlers[group]; ok {
+		if handlers, ok := groupHandlers[status]; ok {
+			p.logger.Debugf("Sending global notification for %s status of %s", status, group)
+			for _, n := range handlers {
+				n.Run()
+			}
+		}
+	}
+}
+
 func (p *Patrol) Start() {
 	if p.checkers == nil || len(p.checkers) == 0 {
 		panic(fmt.Errorf("Cannot start patrol with zero checkers"))
 	}
 
 	for _, checker := range p.checkers {
-		checker.Start()
+		checker.Start(p)
 	}
 
 	go func() {

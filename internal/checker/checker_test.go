@@ -46,7 +46,7 @@ func TestRunLoop(t *testing.T) {
 		Cmd:      "ping -c3 localhost",
 		History:  historyFile,
 	})
-	checker.Start()
+	checker.Start(nil)
 
 	var items []history.Item
 	for i := 0; i < 10 && len(items) == 0; i++ {
@@ -89,7 +89,7 @@ func TestRetries(t *testing.T) {
 		History:       historyFile,
 	})
 	checker.SetLogLevel(logger.LevelDebug)
-	checker.Start()
+	checker.Start(nil)
 	<-time.After(1 * time.Second)
 	checker.Close()
 

@@ -167,7 +167,11 @@ func (c *Checker) check() history.Item {
 	return item
 }
 
-func (c *Checker) Start() {
+type eventReceiver interface {
+	OnCheckerStatus(status, service, check string)
+}
+
+func (c *Checker) Start(receiver eventReceiver) error {
 	c.wg.Add(1)
 	go func() {
 		defer func() {
@@ -184,8 +188,13 @@ func (c *Checker) Start() {
 				c.logger.Debugf("Skipping write, checker is closed")
 
 			default:
-				if err := c.History.Append(item); err != nil {
+				var err error
+				item, err = c.History.Append(item)
+				if err != nil {
 					panic(err)
+				}
+				if receiver != nil {
+					receiver.OnCheckerStatus(item.Status, item.Group, item.Name)
 				}
 			}
 
@@ -197,6 +206,7 @@ func (c *Checker) Start() {
 			}
 		}
 	}()
+	return nil
 }
 
 func (c *Checker) Close() {

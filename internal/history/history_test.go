@@ -28,7 +28,7 @@ func TestMultiOpen(t *testing.T) {
 	}
 
 	for i := 0; i < 100; i++ {
-		if err := history.Append(Item{
+		if _, err := history.Append(Item{
 			Group:     "staging",
 			Name:      "Website is up",
 			Type:      "metric",
@@ -108,7 +108,7 @@ func TestUpserts(t *testing.T) {
 		return
 	}
 
-	if err := history.Append(Item{
+	if _, err := history.Append(Item{
 		Group:     "staging",
 		Name:      "Website is up",
 		Type:      "boolean",
@@ -118,7 +118,7 @@ func TestUpserts(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if err := history.Append(Item{
+	if _, err := history.Append(Item{
 		Group:     "staging",
 		Name:      "Website is up",
 		Type:      "boolean",
@@ -161,7 +161,7 @@ func TestAutoCompact(t *testing.T) {
 		return
 	}
 	for i := 0; i < 100; i++ {
-		if err := history.Append(Item{
+		if _, err := history.Append(Item{
 			Group:     "staging",
 			Name:      "Website is up",
 			Type:      "boolean",
@@ -173,7 +173,7 @@ func TestAutoCompact(t *testing.T) {
 		}
 	}
 	for i := 0; i < 100; i++ {
-		if err := history.Append(Item{
+		if _, err := history.Append(Item{
 			Group:     "staging",
 			Name:      "Website is up",
 			Type:      "boolean",
@@ -219,7 +219,7 @@ func TestAutoCompact(t *testing.T) {
 		return
 	}
 	for i := 0; i < 100; i++ {
-		if err := history.Append(Item{
+		if _, err := history.Append(Item{
 			Group:     "staging",
 			Name:      "Website is up",
 			Type:      "boolean",

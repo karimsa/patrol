@@ -69,7 +69,7 @@ func (item Item) writeTo(out io.Writer) error {
 	return nil
 }
 
-func sendError(receivers []writeRequest, err error) {
+func sendError(receivers []*writeRequest, err error) {
 	for _, recv := range receivers {
 		recv.errChan <- err
 	}
@@ -131,7 +131,7 @@ func (o CompactOptions) String() string {
 
 type File struct {
 	fd             *os.File
-	writes         chan writeRequest
+	writes         chan *writeRequest
 	writerWg       *sync.WaitGroup
 	done           chan bool
 	data           map[string]map[string]*dataContainer
@@ -173,7 +173,7 @@ func New(options NewOptions) (*File, error) {
 
 	file := &File{
 		fd:             fd,
-		writes:         make(chan writeRequest, options.MaxConcurrentWrites),
+		writes:         make(chan *writeRequest, options.MaxConcurrentWrites),
 		writerWg:       &sync.WaitGroup{},
 		done:           make(chan bool),
 		data:           map[string]map[string]*dataContainer{},
@@ -335,16 +335,18 @@ func (file *File) AddChecker(c checker) {
 }
 
 func (file *File) bgWriter() {
+	var err error
 	defer file.writerWg.Done()
 
 	for {
 		select {
 		case req := <-file.writes:
 			file.rwMux.Lock()
-			records := make([]writeRequest, 1)
+			records := make([]*writeRequest, 1)
 			records[0] = req
 
-			if err := file.addItem(req.item, file.fd); err != nil {
+			req.item, err = file.addItem(req.item, file.fd)
+			if err != nil {
 				sendError(records, err)
 			} else {
 				file.compactOptions.numWritesSinceCompact++
@@ -355,7 +357,7 @@ func (file *File) bgWriter() {
 					select {
 					case r := <-file.writes:
 						records = append(records, r)
-						err = file.addItem(r.item, file.fd)
+						r.item, err = file.addItem(r.item, file.fd)
 					default:
 						collect = false
 					}
@@ -378,7 +380,7 @@ func (file *File) bgWriter() {
 	}
 }
 
-func (file *File) addItem(item Item, out io.Writer) error {
+func (file *File) addItem(item Item, out io.Writer) (Item, error) {
 	if _, ok := file.data[item.Group]; !ok {
 		file.data[item.Group] = make(map[string]*dataContainer, 1)
 	}
@@ -420,7 +422,7 @@ func (file *File) addItem(item Item, out io.Writer) error {
 	// Write out first
 	if out != nil {
 		if err := item.writeTo(out); err != nil {
-			return err
+			return item, err
 		}
 	}
 
@@ -474,17 +476,19 @@ func (file *File) addItem(item Item, out io.Writer) error {
 		file.logger.Debugf("Replacing: %s", item)
 	}
 
-	return nil
+	return item, nil
 }
 
-func (file *File) Append(item Item) error {
+func (file *File) Append(item Item) (Item, error) {
 	errChan := make(chan error)
 	item.CreatedAt = time.Now()
-	file.writes <- writeRequest{
+	req := &writeRequest{
 		item:    item,
 		errChan: errChan,
 	}
-	return <-errChan
+	file.writes <- req
+	err := <-errChan
+	return req.item, err
 }
 
 func (file *File) GetItems(c checker) []Item {

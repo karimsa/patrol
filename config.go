@@ -12,21 +12,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type singleNotificationConfig struct {
-	Type    string
-	Options interface{}
-}
-
-func (sn *singleNotificationConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// TODO: Decode based on type
-	return nil
-}
-
-type notificationsRaw struct {
-	OnFailure []*singleNotificationConfig `yaml:"on_failure"`
-	OnSuccess []*singleNotificationConfig `yaml:"on_success"`
-}
-
 type checkCmd string
 
 func (cmd *checkCmd) String() string {
@@ -65,9 +50,15 @@ type configRaw struct {
 			Type       string
 			MetricUnit string `yaml:"unit"`
 		}
-		Notifications notificationsRaw
+
+		OnFailure   []*singleNotificationConfig `yaml:"on_failure"`
+		OnRecovered []*singleNotificationConfig `yaml:"on_recovered"`
+		OnSuccess   []*singleNotificationConfig `yaml:"on_success"`
 	}
-	Notifications notificationsRaw
+
+	OnFailure   []*singleNotificationConfig `yaml:"on_failure"`
+	OnRecovered []*singleNotificationConfig `yaml:"on_recovered"`
+	OnSuccess   []*singleNotificationConfig `yaml:"on_success"`
 }
 
 func FromConfigFile(filePath string, historyOptions *history.NewOptions) (*Patrol, configRaw, error) {
@@ -103,9 +94,15 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 	}
 
 	patrolOpts := CreatePatrolOptions{
-		Name:     raw.Name,
-		Port:     uint32(raw.Port),
-		LogLevel: logLevel,
+		Name:               raw.Name,
+		Port:               uint32(raw.Port),
+		LogLevel:           logLevel,
+		GroupEventHandlers: make(map[string]EventHandlers),
+		GlobalEventHandlers: EventHandlers{
+			"healthy":   raw.OnSuccess,
+			"recovered": raw.OnRecovered,
+			"unhealthy": raw.OnFailure,
+		},
 	}
 
 	if historyOptions == nil {
@@ -173,6 +170,12 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 				CmdTimeout: checkConfig.Timeout.duration(),
 				History:    historyFile,
 			}))
+		}
+
+		patrolOpts.GroupEventHandlers[group] = EventHandlers{
+			"healthy":   groupConfig.OnSuccess,
+			"recovered": groupConfig.OnRecovered,
+			"unhealthy": groupConfig.OnFailure,
 		}
 	}
 
