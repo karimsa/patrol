@@ -55,13 +55,16 @@ func TestRunLoop(t *testing.T) {
 		History:  historyFile,
 	})
 	nt := &notificationTester{notifications: make([][]string, 0, 1)}
-	checker.Start(nt)
 
+	checker.Start(nt)
 	var items []history.Item
 	for i := 0; i < 10 && len(items) == 0; i++ {
 		items = historyFile.GetItems(checker)
 		time.Sleep(1 * time.Second)
 	}
+	checker.Close()
+	historyFile.Close()
+
 	if len(items) != 1 {
 		t.Error(fmt.Errorf("Bad result for history: %#v", items))
 		return
@@ -76,9 +79,6 @@ func TestRunLoop(t *testing.T) {
 			return
 		}
 	}
-
-	checker.Close()
-	historyFile.Close()
 }
 
 func TestRetries(t *testing.T) {
