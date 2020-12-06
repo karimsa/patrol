@@ -98,9 +98,6 @@ func New(options CreatePatrolOptions, historyFile *history.File) (*Patrol, error
 			return nil, err
 		}
 	}
-	if options.GroupEventHandlers == nil {
-		return nil, fmt.Errorf("Group event handlers are required to create a patrol instance")
-	}
 
 	p := &Patrol{
 		name:                options.Name,
@@ -153,10 +150,12 @@ func (p *Patrol) SetLogLevel(level logger.LogLevel) {
 func (p *Patrol) OnCheckerStatus(status, group, checker string) {
 	p.logger.Debugf("status changed: %s, %s, %s", status, group, checker)
 
-	if handlers, ok := p.globalEventHandlers[status]; ok {
-		p.logger.Debugf("Sending global notification for %s status of %s", status, group)
-		for _, n := range handlers {
-			n.Run()
+	if p.globalEventHandlers != nil {
+		if handlers, ok := p.globalEventHandlers[status]; ok {
+			p.logger.Debugf("Sending global notification for %s status of %s", status, group)
+			for _, n := range handlers {
+				n.Run()
+			}
 		}
 	}
 	if groupHandlers, ok := p.groupEventHandlers[group]; ok {
