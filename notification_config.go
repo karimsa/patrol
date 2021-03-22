@@ -41,6 +41,9 @@ func (wn *webhookNotification) UnmarshalYAML(unmarshal func(interface{}) error) 
 	} else {
 		wn.URL = u
 	}
+	if raw.Method != "" {
+		wn.Method = strings.ToUpper(raw.Method)
+	}
 	if wn.URL.Host == "" {
 		return fmt.Errorf("Hostname is required for URLs in webhooks")
 	}
@@ -62,7 +65,7 @@ func (wn *webhookNotification) exec() error {
 	if err != nil {
 		return err
 	}
-	if res.StatusCode < 400 {
+	if res.StatusCode >= 400 {
 		return fmt.Errorf("Webhook returned status: %d", res.StatusCode)
 	}
 

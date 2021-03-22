@@ -151,18 +151,20 @@ func (p *Patrol) OnCheckerStatus(status, group, checker string) {
 	p.logger.Debugf("status changed: %s, %s, %s", status, group, checker)
 
 	if p.globalEventHandlers != nil {
-		if handlers, ok := p.globalEventHandlers[status]; ok {
+		if handlers, ok := p.globalEventHandlers[status]; ok && len(handlers) > 0 {
 			p.logger.Debugf("Sending global notification for %s status of %s", status, group)
-			for _, n := range handlers {
+			for idx, n := range handlers {
 				n.Run()
+				p.logger.Debugf("Sent global notifcation #%d", idx)
 			}
 		}
 	}
 	if groupHandlers, ok := p.groupEventHandlers[group]; ok {
-		if handlers, ok := groupHandlers[status]; ok {
-			p.logger.Debugf("Sending global notification for %s status of %s", status, group)
-			for _, n := range handlers {
+		if handlers, ok := groupHandlers[status]; ok && len(handlers) > 0 {
+			p.logger.Debugf("Sending group notification for %s status of %s", status, group)
+			for idx, n := range handlers {
 				n.Run()
+				p.logger.Debugf("Sent group notifcation #%d", idx)
 			}
 		}
 	}
