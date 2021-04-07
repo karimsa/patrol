@@ -1,4 +1,4 @@
-FROM arm64v8/golang:1.15
+FROM arm64v8/golang:1.15-alpine
 COPY . /app
 ENV NODE_ENV=production
 ENV CGO_ENABLED=0
