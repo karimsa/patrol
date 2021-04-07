@@ -21,15 +21,9 @@ function css_min() {
 
 PATH="$PATH:$(dirname $0)/../node_modules/.bin"
 
-html=`mktemp`
-cat index.html | html_min > $html
+mkdir -p dist
+
+cat index.html | html_min > dist/index.html
 
 css=`mktemp`
-tailwindcss build | css_min > $css
-
-cat > static.go << EOF
-package patrol
-
-var indexHTML = \`$(cat $html)\`
-var stylesCSS = \`$(cat $css)\`
-EOF
+tailwindcss build | css_min > dist/styles.css

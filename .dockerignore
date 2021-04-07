@@ -1,12 +1,7 @@
 node_modules
-package.json
-package-lock.json
 *.crt
 *.pem
 *.yml
 *.md
 *.log
 *.db
-*.html
-*.sh
-

@@ -12,10 +12,17 @@ jobs:
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
+    - name: Setup Node.js for use with actions
+      uses: actions/setup-node@v1.1.0
+      with:
+        version: 14.x
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '^1.16'
     # - name: SSH Session for Debugging Failure
     #   uses: mxschmitt/action-tmate@v1
     - name: Install
-      run: npm ci && NODE_ENV=production go generate
+      run: npm ci
     - name: Test
       run: |
         go test ./... -race
