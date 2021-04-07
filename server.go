@@ -19,8 +19,6 @@ import (
 	"github.com/karimsa/patrol/internal/logger"
 )
 
-//go:generate ./scripts/build-css.sh
-
 type chartResult struct {
 	SVG           string
 	Min, Max, Avg float64
