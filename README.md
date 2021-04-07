@@ -53,6 +53,34 @@ There are two tags that are published to the docker repo for this project:
  - `latest`: As per docker convention, this is the latest stable release of patrol.
  - `unstable`: This is the latest copy of the image from `master` - if you like to live life on the edge.
 
+## Building docker containers from source
+
+To build docker containers from source the following prerequistes are needed.
+
+* [Docker](https://docs.docker.com/get-docker/)
+* Git
+	* Ubuntu (or Debian-based OS): `apt install git`
+	* CentOS 8: `dnf install git`
+	* CentOS 7: `yum install git`
+* [Golang](https://golang.org/doc/install)
+* Node.js/NPM
+	* [Ubuntu 20.04](https://linuxize.com/post/how-to-install-node-js-on-ubuntu-20-04/)
+	* [Ubuntu 18.04](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-18-04)
+	* [CentOS 8](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-centos-8)
+* TailwindCSS
+	* `npm install tailwind`
+
+Once those three are installed you can use the `git` command line tool to clone the repository (`git clone https://github.com/karimsa/patrol/`).
+
+After you have cloned the repository you'll need to utilize go to compile/generate the working files from the source code. This is done by running `go generate` inside the directory where you cloned the repository. Think of `go generate` as the equivalent of `make`.
+
+Now that we have the code compiled and the prerequistes installed you can use `docker build` to create the containers. To generate a x86_64 architecture container run `docker build .`. This will use the file named `Dockerfile` to create the image.
+
+__If you're building ARM64v8...__
+
+To create an image for ARM64v8 architecture you'll need to specifiy the docker file in the `docker build` command. This can be done by running `docker build -f Dockerfile-ARM64v8 .` (yes include the period!). If you do not specify that specific file, when attempting to run the container on an ARM64v8-based system such as the Raspberry PI 4, you'll receive this error: `unable to prepare context: unable to evaluate symlinks in Dockerfile path`.
+
+
 ## Usage
 
 The purpose of `patrol` is to be able to self-host an automated status page that gives you an overview of
