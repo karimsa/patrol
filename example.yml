@@ -1,5 +1,6 @@
 name: MyApp Status
 db: data.db
+port: 8080
 
 ## Map consisting of services to display on your statuspage. Each service
 ## can have multiple checks.
