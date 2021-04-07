@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "start": "nodemon --signal SIGKILL -w . -e go,html,js,yml -i static.go -x 'go generate && go run ./cmd/patrol run --config example.yml || exit 1'"
+  },
+  "devDependencies": {
+    "cssnano": "^4.1.10",
+    "postcss-cli": "^8.1.0",
+    "tailwindcss": "^1.9.6"
+  },
+  "dependencies": {
+    "tailwind": "^4.0.0"
+  }
+}

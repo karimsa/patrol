@@ -1,0 +1,154 @@
+{{$data := .}}
+<!doctype html>
+<html lang="en-US">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{$data.Name}}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="turbolinks-cache-control" content="no-cache">
+        <style>{{template "styles.css"}}</style>
+        <script async defer src="https://cdnjs.cloudflare.com/ajax/libs/turbolinks/5.2.0/turbolinks.js"></script>
+    </head>
+    <body class="bg-gray-300">
+        <header class="bg-gray-800 py-12">
+            <div class="container px-5 lg:px-20 mx-auto">
+                <h1 class="text-2xl font-bold text-white mb-4">MyApp Status</h1>
+                <div class="{{if (eq $data.NumServicesDown 0)}}bg-green-700{{else}}bg-red-800{{end}} shadow-sm p-5 rounded mb-4 text-center md:text-left md:flex items-center justify-between">
+                    {{if (eq $data.NumServicesDown 0)}}
+                        <p class="font-semibold text-xl text-white">All systems operational</p>
+                    {{else}}
+                        <p class="font-semibold text-xl text-white">{{$data.NumServicesDown}} Systems are down</p>
+                    {{end}}
+
+                    {{if gt $data.NumServices 0}}
+                        <span class="text-white text-sm text-right">Last updated: {{since $data.LatestCreatedAt}}</span>
+                    {{end}}
+                </div>
+
+                <div class="-ml-4 text-center md:text-left">
+                {{if not (eq $data.StatusFilter "")}}
+                    <a href="/" class="bg-blue-800 px-2 py-1 rounded text-white shadow text-sm ml-4">Show all</a>
+                {{end}}
+                {{if not (eq $data.StatusFilter "unhealthy")}}
+                    <a href="/?status=unhealthy" class="bg-red-800 px-2 py-1 rounded text-white shadow text-sm ml-4">Show unhealthy</a>
+                {{end}}
+                {{if not (eq $data.StatusFilter "recovered")}}
+                    <a href="/?status=recovered" class="bg-orange-800 px-2 py-1 rounded text-white shadow text-sm ml-4">Show recovered</a>
+                {{end}}
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-5 lg:px-20 py-12">
+            {{range $groupName, $group := $data.Groups}}
+                {{if eq $groupName (or $data.GroupFilter $groupName)}}
+                    <div class="mb-12">
+                        <div class="mb-4 flex items-center">
+                            <h2 class="font-bold text-2xl inline-block">{{$groupName}}</h2>
+                            {{if eq $data.GroupFilter ""}}
+                                <a href="/?group={{$groupName}}" class="bg-blue-800 px-2 py-1 rounded text-white shadow-sm text-sm ml-4">Focus</a>
+                            {{else}}
+                                <a href="/" class="bg-indigo-600 px-2 py-1 rounded text-white shadow-sm text-sm ml-4">Unfocus</a>
+                            {{end}}
+                        </div>
+                        {{range $checkName, $items := $group}}
+                            {{if gt (len $items) 0}}
+                                {{$latestItem := index $items 0}}
+                                {{if eq $latestItem.Status (or $data.StatusFilter $latestItem.Status)}}
+                                    <div class="bg-white shadow-sm p-5 rounded mb-12">
+                                        <div class="mb-4 flex items-center justify-between">
+                                            <h3 class="font-semibold">{{$checkName}}</h3>
+                                            <div class="flex items-center">
+                                                {{if eq $latestItem.Status "healthy"}}
+                                                    <span class="font-semibold text-green-700">Healthy</span>
+                                                {{else if eq $latestItem.Status "unhealthy"}}
+                                                    <span class="font-semibold text-red-800">Unhealthy</span>
+                                                {{else}}
+                                                    <span class="font-semibold text-orange-700">Recovered</span>
+                                                {{end}}
+
+                                                <span class="text-gray-700 text-xs ml-4">{{ since $latestItem.CreatedAt }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            {{if eq $latestItem.Type "boolean"}}
+                                                <svg class="mx-auto" viewBox="0 0 318 10">
+                                                    {{range $_, $idx := nums 0 (sub 79 (len $items))}}
+                                                        <rect
+                                                            height="10"
+                                                            width="2"
+                                                            x="{{ mul $idx 4 }}"
+                                                            y="0"
+                                                            fill="#d9dbde" />
+                                                    {{end}}
+                                                    {{range $_, $idx := nums (sub (len $items) 1) 0}}
+                                                        {{$item := index $items $idx}}
+
+                                                        {{if $data.Debug}}
+                                                            <!-- {{printf "%s" $item}} -->
+                                                        {{end}}
+                                                        <rect
+                                                            data-item-id="{{$item.ID}}"
+                                                            height="10"
+                                                            width="2"
+                                                            x="{{ mul (plus $idx (sub 80 (len $items))) 4 }}"
+                                                            y="0"
+                                                            fill="
+                                                                {{if eq $item.Status "healthy"}}
+                                                                    #38a169
+                                                                {{else if eq $item.Status "unhealthy"}}
+                                                                    #c05621
+                                                                {{else if eq $item.Status "recovered"}}
+                                                                    #9b2c2c
+                                                                {{end}}
+                                                            " />
+                                                    {{end}}
+                                                </svg>
+                                                {{if eq $latestItem.Status "unhealthy"}}
+                                                    <pre class="font-mono p-3 mt-4 bg-gray-300 rounded border-2 border-red-800 break-words">
+                                                        <code>{{printf "%s\n---\n\n" $latestItem.Error}}{{or (printf "%s" $latestItem.Output) "(No output)"}}</code>
+                                                    </pre>
+                                                {{end}}
+                                            {{else}}
+                                                {{$chart := chart $items}}
+                                                {{if eq $chart.Error ""}}
+                                                    <img
+                                                        src="data:image/svg+xml;base64,{{$chart.SVG}}"
+                                                        alt="Chart showing metric data points for {{$checkName}} check in {{$groupName}}."
+                                                    />
+                                                {{else}}
+                                                    <pre class="font-mono p-3 mt-4 bg-gray-300 rounded border-2 border-red-800 break-words">
+                                                        <code>{{$chart.Error}}}</code>
+                                                    </pre>
+                                                {{end}}
+                                                {{if eq $latestItem.Status "unhealthy"}}
+                                                    <pre class="font-mono p-3 mt-6 mb-4 bg-gray-300 rounded border-2 border-red-800 break-words"><code>{{printf "%s\n---\n\n" $latestItem.Error}}{{or (printf "%s" $latestItem.Output) "(No output)"}}</code></pre>
+                                                {{end}}
+                                                <div class="flex items-center mt-4 justify-center text-sm">
+                                                    <p>Min: <span class="text-blue-700">{{fmtNum $chart.Min}}</span></p>
+                                                    <span class="px-2">•</span>
+                                                    <p>Max: <span class="text-blue-700">{{fmtNum $chart.Max}}</span></p>
+                                                    <span class="px-2">•</span>
+                                                    <p class="">Avg: <span class="text-blue-700">{{fmtNum $chart.Avg}}</span></p>
+                                                </div>
+                                            {{end}}
+                                        </div>
+                                    </div>
+                                {{end}}
+                            {{end}}
+                        {{end}}
+                    </div>
+                {{end}}
+            {{end}}
+        </main>
+        <script>
+            function render() {
+                Turbolinks.Visit.prototype.performScroll = Turbolinks.BrowserAdapter.prototype.reload = function(){};
+                Turbolinks.visit(location.href, { action: 'replace' })
+            };
+            setInterval(render, 5 * 1000);
+            window.addEventListener('focus', render);
+        </script>
+    </body>
+</html>
