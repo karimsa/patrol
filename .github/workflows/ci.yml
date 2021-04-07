@@ -5,6 +5,7 @@ on:
     branches: [ master ]
 env:
   GH_REGISTRY_TOKEN: ${{ secrets.GH_REGISTRY_TOKEN }}
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 jobs:
   build:
     name: Build
