@@ -19,6 +19,8 @@
 	- [Health check images](#health-check-images)
 	- [Health check options](#health-check-options)
  - [Managing secrets](#managing-secrets)
+ - [Troubleshooting](#troubleshooting)
+ - [Building container from source](#building-container-from-source)
  - [License](#license)
 
 ## TL;DR
@@ -53,33 +55,36 @@ There are two tags that are published to the docker repo for this project:
  - `latest`: As per docker convention, this is the latest stable release of patrol.
  - `unstable`: This is the latest copy of the image from `master` - if you like to live life on the edge.
 
-## Building docker containers from source
+### Running on raspberry pi
 
-To build docker containers from source the following prerequistes are needed.
+```shell
+$ docker run -d \
+	--name patrol \
+	--restart=on-failure \
+	-v "$PWD:/data" \
+	-p 8080:8080 \
+	--log-driver json-file \
+	--log-opt max-size=100m \
+	ghcr.io/karimsa/patrol:latest-arm64v8 \
+	run \
+	--config /config/patrol.yml
+```
 
-* [Docker](https://docs.docker.com/get-docker/)
-* Git
-	* Ubuntu (or Debian-based OS): `apt install git`
-	* CentOS 8: `dnf install git`
-	* CentOS 7: `yum install git`
-* [Golang](https://golang.org/doc/install)
-* Node.js/NPM
-	* [Ubuntu 20.04](https://linuxize.com/post/how-to-install-node-js-on-ubuntu-20-04/)
-	* [Ubuntu 18.04](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-18-04)
-	* [CentOS 8](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-centos-8)
-* TailwindCSS
-	* `npm install tailwind`
+ - `latest-arm64v8`: Latest stable release of patrol for the raspberry pi.
+ - `unstable-arm64v8`: Latest copy of the image for the raspberry pi from `master` - if you like to live life on the edge.
 
-Once those three are installed you can use the `git` command line tool to clone the repository (`git clone https://github.com/karimsa/patrol/`).
+### Notes about docker container
 
-After you have cloned the repository you'll need to utilize go to compile/generate the working files from the source code. This is done by running `go generate` inside the directory where you cloned the repository. Think of `go generate` as the equivalent of `make`.
+For security reasons, the default user inside the patrol container is `patrol` (in the group `patrol`). This is a non-root user.
 
-Now that we have the code compiled and the prerequistes installed you can use `docker build` to create the containers. To generate a x86_64 architecture container run `docker build .`. This will use the file named `Dockerfile` to create the image.
+**What this means for you:**
 
-__If you're building ARM64v8...__
+ * Ports `< 1024` cannot be listened on within the container. This is not a problem, just have patrol listen on a port above 1024 and use docker to perform port forwarding (see the run example above).
+ * File permissions on the config file and data directory passed to patrol have to be such that patrol can read/write to those files.
+   * For the config file, the minimum permissions are `0644`.
+   * For the data file, the minimum permissions are `0666`.
 
-To create an image for ARM64v8 architecture you'll need to specifiy the docker file in the `docker build` command. This can be done by running `docker build -f Dockerfile-ARM64v8 .` (yes include the period!). If you do not specify that specific file, when attempting to run the container on an ARM64v8-based system such as the Raspberry PI 4, you'll receive this error: `unable to prepare context: unable to evaluate symlinks in Dockerfile path`.
-
+If you are still having issues, please check the [Troubleshooting](#troubleshooting) section and then open a GitHub issue if your issue persists.
 
 ## Usage
 
@@ -191,11 +196,9 @@ There are a number of steps you can take to troubleshoot an installation of patr
 
 ### Docker
 
-```
-2021/04/02 03:32:33 Initializing with SHELL = /bin/sh
-open patrol.yml: permission denied
-```
-* If you encounter a permission denied error for `patrol.yml` ensure that the file has at least a chmod value of 664. To fix this run `chmod 664 patrol.yml`.
+#### `open patrol.yml: permission denied`
+
+If you encounter a permission denied error for `patrol.yml` ensure that the file has at least a chmod value of 664. To fix this run `chmod 664 patrol.yml`.
 
 ```
 2021/04/02 03:38:33 Initializing with SHELL = /bin/sh
@@ -203,18 +206,28 @@ open data.db: permission denied
 ```
 * When having permission issues with `data.db` ensure that the file has at least a chmod value of 666. To fix this run `chmod 666 data.db`
 
-```
-2021/04/02 03:49:00 Initializing with SHELL = /bin/sh
-open /config/patrol.yml: no such file or directory
-```
-* If patrol states that it cannot find your files, try removing the `/` before `config` in the `--config /config/patrol.yml` line. If this still does not work try changing `$PWD` to another directory on the system. By default Patrol will attempt to run of out whatever directory you run the docker command in. Just ensure that the files are chmodded properly and keep the `/` removed before `config` as stated above.
+#### `open patrol.yml: no such file or directory`
 
-```
-panic: listen tcp :80: bind: permission denied
-```
-* This error is typically seen when the `port:` variable is missing from the `patrol.yml` config. Add `port: 8080` after the `db:` variable in the config.
+Patrol will try to resolve the config file relative to the current working directory. In the docker container, this is set to `/data` (you can override it using `workdir`).
 
-__Don't see your issue above?__
+If you receive a "no such file or directory" error for the config file, you can try:
+
+ * Provide an absolute path to the config file.
+ * Make sure you have mounted the config file into the docker container correctly.
+
+#### `panic: listen tcp :80: bind: permission denied`
+
+As stated previously, the default user in the docker container cannot access ports `< 1024` since it is a non-root user.
+
+To resolve this, change your port to something above `1024`. For example:
+
+```yaml
+port: 8080
+
+# rest of the patrol.yml file here
+```
+
+**Don't see your issue above?**
 
 When submitting an issue report please make sure to gather the docker container logs. This can be done by running `docker logs CONTAINER` on your docker host. Replace `CONTAINER` with the name you gave your patrol container. If you're using the docker run command above the command will be `docker logs patrol`. Make sure to copy and provide the output in the issue report.
 
@@ -222,6 +235,14 @@ Please also provide your `patrol.yml` file. Make sure to sanitize it before subm
 
 Last but not least, anything else that you think will help diagnose your issue please include in the report as well.
 
+## Building from source
+
+### Building container from source
+
+To build docker containers from source, you will need to clone the git repository and make sure you have the latest version of Docker installed.
+
+ * Building the x86 image: `docker build -t patrol .`
+ * Building for Raspberry Pi: `docker build -t patrol-pi -f Dockerfile.arm64v8 .`
 
 ## License
 
