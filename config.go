@@ -79,7 +79,7 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 		raw.Name = "Statuspage"
 	}
 	if raw.Port <= 0 {
-		raw.Port = 80
+		raw.Port = 8080
 	}
 	if raw.DB == "" {
 		err = fmt.Errorf("'db' propery must be specified in config file")
