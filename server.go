@@ -10,6 +10,7 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	_ "embed"
 
 	"github.com/andanhm/go-prettytime"
 	"github.com/wcharczuk/go-chart"
@@ -24,6 +25,12 @@ type chartResult struct {
 	Min, Max, Avg float64
 	Error         string
 }
+
+//go:embed dist/index.html
+var indexHTML string
+
+//go:embed dist/styles.css
+var stylesCSS string
 
 var (
 	gridMajorStyle = chart.Style{
