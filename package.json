@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "nodemon --signal SIGKILL -w . -e go,html,js,yml -i static.go -x 'go generate && go run ./cmd/patrol run --config example.yml || exit 1'",
-    "build": "./scripts/build.sh"
+    "build": "./scripts/build-css.sh"
   },
   "devDependencies": {
     "cssnano": "^4.1.10",
