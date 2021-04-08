@@ -1,4 +1,4 @@
-FROM node:14
+FROM arm64v8/node:14-alpine3.13
 WORKDIR /app
 COPY package.json .
 COPY package-lock.json .
@@ -6,13 +6,13 @@ COPY scripts scripts
 COPY index.html .
 COPY tailwind.config.js .
 COPY postcss.config.js .
-RUN npm install --silent && ./scripts/build-css.sh
+RUN npm install --silent && ./scripts/build-css-arm64v8.sh
 
 FROM arm64v8/golang:1.16-alpine
+COPY --from=0 /app/dist /app/dist
 COPY . /app
 ENV NODE_ENV=production
 ENV CGO_ENABLED=0
-COPY --from=0 /app/dist dist
 RUN cd /app && \
         go vet ./... && \
         go test ./... && \
