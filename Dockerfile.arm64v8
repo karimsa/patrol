@@ -6,7 +6,7 @@ COPY scripts scripts
 COPY index.html .
 COPY tailwind.config.js .
 COPY postcss.config.js .
-RUN npm install --silent && ./scripts/build-css-arm64v8.sh
+RUN npm install --silent && ./scripts/build-css.sh
 
 FROM arm64v8/golang:1.16-alpine
 COPY --from=0 /app/dist /app/dist
