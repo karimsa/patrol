@@ -1,4 +1,4 @@
-FROM node:14
+FROM arm64v8/node:14
 WORKDIR /app
 COPY package.json .
 COPY package-lock.json .
@@ -8,7 +8,7 @@ COPY tailwind.config.js .
 COPY postcss.config.js .
 RUN npm install --silent && ./scripts/build-css.sh
 
-FROM golang:1.16-alpine
+FROM arm64v8/golang:1.16-alpine
 COPY . /app
 ENV NODE_ENV=production
 ENV CGO_ENABLED=0
@@ -16,7 +16,7 @@ COPY --from=0 /app/dist dist
 RUN cd /app && \
         go vet ./... && \
         go test ./... && \
-        GOOS=linux GOARCH=arm64 go build -o /tmp/patrol ./cmd/patrol
+        go build -o /tmp/patrol ./cmd/patrol
 
 FROM arm64v8/alpine:3.9
 LABEL org.opencontainers.image.source https://github.com/karimsa/patrol
