@@ -197,9 +197,10 @@ func New(options NewOptions) (*File, error) {
 		line, err = bufferedReader.ReadBytes('\n')
 		if len(line) > 0 {
 			if err := json.Unmarshal(line[:len(line)-1], &item); err != nil {
-				return nil, fmt.Errorf("failed to open history file: line %d: %s", lineNumber, err)
+				fmt.Fprintf(os.Stderr, "warning: skipping line %d of history file: %s\n", lineNumber, err)
+			} else {
+				file.addItem(item, nil)
 			}
-			file.addItem(item, nil)
 		}
 	}
 
