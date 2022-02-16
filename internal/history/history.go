@@ -191,11 +191,13 @@ func New(options NewOptions) (*File, error) {
 	bufferedReader := bufio.NewReader(fd)
 	var item Item
 	var line []byte
+	var lineNumber int
 	for err != io.EOF {
+		lineNumber++
 		line, err = bufferedReader.ReadBytes('\n')
 		if len(line) > 0 {
 			if err := json.Unmarshal(line[:len(line)-1], &item); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to open history file: line %d: %s", lineNumber, err)
 			}
 			file.addItem(item, nil)
 		}
