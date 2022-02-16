@@ -2,6 +2,7 @@ package patrol
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -10,7 +11,6 @@ import (
 	"strings"
 	"text/template"
 	"time"
-	_ "embed"
 
 	"github.com/andanhm/go-prettytime"
 	"github.com/wcharczuk/go-chart"
