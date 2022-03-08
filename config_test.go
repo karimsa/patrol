@@ -46,12 +46,7 @@ services:
       interval: 60s
       cmd: 'echo doing stuff'
 on_failure:
-- webhook:
-    method: post
-    url: https://hooks.slack.com/services/MY_CUSTOM_WEBHOOK
-    headers:
-      'Content-Type': 'application/json'
-    body: '{"text":"Service \"{{service}}\" is down (check \"{{check.name}}\" failed)."}'
+- command: echo hello world
 on_success:
   - webhook:
       method: post

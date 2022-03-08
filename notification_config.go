@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -72,8 +73,31 @@ func (wn *webhookNotification) exec() error {
 	return nil
 }
 
+type commandNotification struct {
+	command string
+}
+
+func (cn *commandNotification) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := unmarshal(&cn.command); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cn *commandNotification) exec() error {
+	cmd := exec.Command("/bin/sh", "-c", cn.command)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	if cmd.ProcessState.ExitCode() != 0 {
+		return fmt.Errorf("command '%s' failed with exit %d", cn.command, cmd.ProcessState.ExitCode())
+	}
+	return nil
+}
+
 type singleNotificationConfig struct {
 	Webhook *webhookNotification
+	Command *commandNotification
 }
 
 type specificNotifier interface {
@@ -86,6 +110,9 @@ func (sn *singleNotificationConfig) Run() {
 
 	if sn.Webhook != nil {
 		notifier = sn.Webhook
+	}
+	if sn.Command != nil {
+		notifier = sn.Command
 	}
 
 	if notifier == nil {
