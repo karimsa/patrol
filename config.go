@@ -43,12 +43,14 @@ type configRaw struct {
 	Compact  history.CompactOptions
 	Services map[string]struct {
 		Checks []struct {
-			Name       string
-			Interval   duration
-			Timeout    duration
-			Cmd        checkCmd
-			Type       string
-			MetricUnit string `yaml:"unit"`
+			Name          string
+			Interval      duration
+			Timeout       duration
+			Cmd           checkCmd
+			Type          string
+			MetricUnit    string        `yaml:"unit"`
+			MaxRetries    *int          `yaml:"maxRetries"`
+			RetryInterval time.Duration `yaml:"retryInterval"`
 		}
 
 		OnFailure   []*singleNotificationConfig `yaml:"on_failure"`
@@ -159,16 +161,26 @@ func FromConfig(data []byte, historyOptions *history.NewOptions) (patrol *Patrol
 				checkConfig.Timeout = duration(3 * time.Minute)
 			}
 
+			maxRetries := 3
+			if checkConfig.MaxRetries != nil {
+				maxRetries = *checkConfig.MaxRetries
+			}
+			if checkConfig.RetryInterval <= 0*time.Second {
+				checkConfig.RetryInterval = 1 * time.Minute
+			}
+
 			groupConfig.Checks[idx] = checkConfig
 			patrolOpts.Checkers = append(patrolOpts.Checkers, checker.New(&checker.Checker{
-				Group:      group,
-				Name:       checkConfig.Name,
-				Type:       checkConfig.Type,
-				Cmd:        checkConfig.Cmd.String(),
-				MetricUnit: checkConfig.MetricUnit,
-				Interval:   checkConfig.Interval.duration(),
-				CmdTimeout: checkConfig.Timeout.duration(),
-				History:    historyFile,
+				Group:         group,
+				Name:          checkConfig.Name,
+				Type:          checkConfig.Type,
+				Cmd:           checkConfig.Cmd.String(),
+				MetricUnit:    checkConfig.MetricUnit,
+				MaxRetries:    maxRetries,
+				RetryInterval: checkConfig.RetryInterval,
+				Interval:      checkConfig.Interval.duration(),
+				CmdTimeout:    checkConfig.Timeout.duration(),
+				History:       historyFile,
 			}))
 		}
 
