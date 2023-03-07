@@ -4,7 +4,7 @@
     "build": "./scripts/build-css.sh"
   },
   "devDependencies": {
-    "cssnano": "^4.1.10",
+    "cssnano": "^5.1.15",
     "postcss-cli": "^8.1.0",
     "tailwindcss": "^1.9.6"
   }
